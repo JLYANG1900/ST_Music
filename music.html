@@ -41,12 +41,14 @@
                     <div class="stm-control-group">
                         <input type="file" id="stm-file-input" accept="audio/mp3,audio/*" multiple
                             style="display:none;">
-                        <button class="stm-ctrl-btn stm-upload-btn" id="stm-btn-upload" title="本地上传试听 (浏览器刷新后会消失)">
-                            <i class="fa-solid fa-upload"></i>
-                        </button>
-                        <button class="stm-ctrl-btn" id="stm-btn-link" title="添加网络链接（浏览器刷新后可保留）">
-                            <i class="fa-solid fa-link"></i>
-                        </button>
+                        <div class="stm-btn-row">
+                            <button class="stm-ctrl-btn stm-upload-btn" id="stm-btn-upload" title="本地上传试听 (浏览器刷新后会消失)">
+                                <i class="fa-solid fa-upload"></i>
+                            </button>
+                            <button class="stm-ctrl-btn" id="stm-btn-link" title="添加网络链接（浏览器刷新后可保留）">
+                                <i class="fa-solid fa-link"></i>
+                            </button>
+                        </div>
                         <span class="stm-ctrl-label">Load / Link</span>
                     </div>
 
@@ -207,6 +209,28 @@
                     </div>
                 </div>
 
+            </div>
+            <!-- Link Input Modal -->
+            <div id="stm-link-modal" class="stm-modal-overlay" style="display: none;">
+                <div class="stm-modal-content">
+                    <div class="stm-modal-header">
+                        <h3>Add New Track</h3>
+                    </div>
+                    <div class="stm-modal-body">
+                        <div class="stm-form-group">
+                            <label for="stm-link-url">Audio URL</label>
+                            <input type="text" id="stm-link-url" placeholder="https://files.catbox.moe/XXXXXX.mp3">
+                        </div>
+                        <div class="stm-form-group">
+                            <label for="stm-link-name">Track Name</label>
+                            <input type="text" id="stm-link-name" placeholder="Leave empty for auto-detect">
+                        </div>
+                    </div>
+                    <div class="stm-modal-footer">
+                        <button id="stm-modal-cancel" class="stm-btn-secondary">Cancel</button>
+                        <button id="stm-modal-confirm" class="stm-btn-primary">Add Track</button>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
