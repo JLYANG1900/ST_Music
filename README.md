@@ -38,16 +38,31 @@ ST_Music 是一款为 SillyTavern 设计的沉浸式音乐创作与播放插件�
 
 ## 📦 安装与使用 (Installation)
 
+### Method 1: Automatic Installation (Recommended / 推荐)
+1.  In SillyTavern, open the **Extensions** menu.
+    *   在 SillyTavern 中打开 **扩展 (Extensions)** 菜单。
+2.  Click **Install Extension** button.
+    *   点击 **安装扩展 (Install Extension)** 按钮。
+3.  Paste the following Git URL into the input box and click **Save**:
+    *   将以下 Git URL 粘贴到输入框中并点击 **保存**:
+    ```
+    https://github.com/JLYANG1900/ST_Music
+    ```
+4.  Find the extension in the list and enable it.
+    *   在列表中找到该插件并启用。
+5.  **Restart SillyTavern** (Server Restart Required)
+    *   *⚠️ 必须重启后台控制台，以加载负责文件上传的后端脚本。*
+
+### Method 2: Manual Installation (Git Clone)
 1.  进入 SillyTavern 插件目录：
     ```bash
     cd /path/to/SillyTavern/public/scripts/extensions/
     ```
 2.  克隆本仓库：
     ```bash
-    git clone https://github.com/YourUsername/ST_Music.git
+    git clone https://github.com/JLYANG1900/ST_Music.git
     ```
-3.  **重启 SillyTavern** (Server Restart Required)
-    *   *注意：必须重启后台控制台，以加载负责文件上传的后端脚本。*
+3.  **重启 SillyTavern**。
 
 ## 💡 使用流程
 
