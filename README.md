@@ -26,7 +26,7 @@ ST_Music 是一款为 SillyTavern 设计的沉浸式音乐创作与播放插件�
 
 ### 📻 播放器界面 Player UI
 *边玩酒馆边听，沉浸感拉满。*
-![Player UI](https://i.ibb.co/bgP2JLQ4/image.png)
+![Player UI](https://i.ibb.co/JRScvp5K/image.png)
 
 ### 🎹 创作界面 Creation UI
 *定义你的音乐风格，邀请角色共同创作。*
@@ -34,7 +34,7 @@ ST_Music 是一款为 SillyTavern 设计的沉浸式音乐创作与播放插件�
 ![Creation UI 2](https://i.ibb.co/Kc3cq5xH/2.png)
 
 ### 🎼 成果界面 Results
-*(成果界面截图即将上线)*
+![Results UI](https://i.ibb.co/dwqgNLtW/image.png)
 
 ## 📦 安装与使用 (Installation)
 
