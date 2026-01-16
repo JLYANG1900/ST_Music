@@ -1110,5 +1110,3 @@ const GENRE_DATA = { /* ... (保留原有 Genre Data, 这里省略以节省篇�
     window.STMusic = STMusic;
     STMusic.init();
 }
-
-
