@@ -1,0 +1,11 @@
+{
+    "name": "st_music",
+    "version": "1.0.0",
+    "description": "AI Music Creator Extension for SillyTavern",
+    "main": "index.js",
+    "author": "JLYANG1900",
+    "license": "AGPL-3.0",
+    "engines": {
+        "node": ">=18.0.0"
+    }
+}
