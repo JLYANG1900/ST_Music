@@ -1,0 +1,1070 @@
+/* --- ST Music Creator 样式表 (Braun SK4 Style) --- */
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=JetBrains+Mono:wght@300;400&display=swap');
+
+#st-music-root {
+    /* Braun SK4 "Snow White's Coffin" 设计语言 */
+    --stm-surface: #F4F4F0;
+    --stm-surface-dark: #e8e8e5;
+    --stm-text-dark: #333333;
+    --stm-text-sub: #666666;
+    --stm-text-muted: #999999;
+    --stm-accent: #FF4400;
+    --stm-accent-hover: #e63d00;
+    --stm-mesh-dot: #a0a09d;
+    --stm-border: #dcdcdc;
+    --stm-shadow: rgba(0, 0, 0, 0.05);
+    --stm-shadow-lg: rgba(0, 0, 0, 0.15);
+
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+/* 强制移除所有文字阴影 (覆盖 SillyTavern 全局样式) */
+#st-music-root,
+#st-music-root *,
+#st-music-panel,
+#st-music-panel * {
+    text-shadow: none !important;
+}
+
+/* 切换按钮 (悬浮在页面上) */
+#st-music-toggle-btn {
+    position: fixed;
+    z-index: 2147483647;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s, opacity 0.2s;
+    user-select: none;
+    background: var(--stm-surface, #F4F4F0);
+    border-radius: 50%;
+    border: 2px solid var(--stm-accent, #FF4400);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    color: var(--stm-accent, #FF4400);
+    opacity: 0.5;
+}
+
+#st-music-toggle-btn:hover {
+    transform: scale(1.1);
+    opacity: 1;
+}
+
+/* 主面板 */
+#st-music-panel {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 90vw;
+    max-width: 1000px;
+    height: 85vh;
+    max-height: 700px;
+    background-color: var(--stm-surface);
+    border-radius: 2rem;
+    box-shadow:
+        0 30px 60px -15px var(--stm-shadow-lg),
+        0 10px 20px -10px var(--stm-shadow);
+    overflow: hidden;
+    display: none;
+    flex-direction: column;
+    z-index: 2147483647;
+    border: 1px solid #fff;
+    opacity: 0;
+    transition: opacity 0.2s ease, width 0.3s ease, max-width 0.3s ease, height 0.3s ease, max-height 0.3s ease;
+}
+
+#st-music-panel.active {
+    display: flex;
+    opacity: 1;
+}
+
+/* 紧凑模式 (仅播放器) */
+#st-music-panel.stm-compact {
+    width: 340px;
+    max-width: 340px;
+    height: auto;
+    max-height: 500px;
+}
+
+/* 标题栏 */
+.stm-header {
+    padding: 12px 20px;
+    background: var(--stm-surface);
+    border-bottom: 1px solid var(--stm-border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-shrink: 0;
+    user-select: none;
+    cursor: move;
+}
+
+.stm-logo-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.stm-disc-icon {
+    font-size: 20px;
+    animation: stm-spin-slow 8s linear infinite paused;
+}
+
+.stm-disc-icon.spinning {
+    animation-play-state: running;
+}
+
+@keyframes stm-spin-slow {
+    from {
+        transform: rotate(0deg);
+    }
+
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.stm-brand {
+    font-weight: 700;
+    font-size: 1.4rem;
+    color: var(--stm-text-dark);
+    letter-spacing: -0.5px;
+}
+
+.stm-model {
+    font-weight: 300;
+    font-size: 0.9rem;
+    color: var(--stm-text-muted);
+    letter-spacing: 2px;
+    margin-left: 4px;
+}
+
+.stm-header-controls {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+/* 页面切换标签按钮 */
+.stm-tab-btn {
+    background: transparent;
+    border: 1px solid var(--stm-border);
+    color: var(--stm-text-sub);
+    padding: 6px 12px;
+    font-size: 13px;
+    font-family: inherit;
+    cursor: pointer;
+    border-radius: 4px;
+    transition: all 0.2s;
+}
+
+.stm-tab-btn:hover {
+    border-color: var(--stm-text-sub);
+}
+
+.stm-tab-btn.active {
+    background: var(--stm-text-dark);
+    color: #fff;
+    border-color: var(--stm-text-dark);
+}
+
+.stm-icon-btn {
+    background: transparent;
+    border: 1px solid var(--stm-border);
+    color: var(--stm-text-sub);
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    border-radius: 4px;
+    font-size: 14px;
+    transition: all 0.2s;
+}
+
+.stm-icon-btn:hover {
+    background: var(--stm-text-dark);
+    color: #fff;
+    border-color: var(--stm-text-dark);
+}
+
+/* 主体区域 */
+.stm-body {
+    flex: 1;
+    display: flex;
+    overflow: hidden;
+    min-height: 0;
+}
+
+/* 左侧播放器区域 */
+.stm-player-section {
+    width: 280px;
+    flex-shrink: 0;
+    background: var(--stm-surface);
+    border-right: 1px solid var(--stm-border);
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+/* 紧凑模式下播放器区域 */
+.stm-compact .stm-player-section {
+    width: 100%;
+    border-right: none;
+}
+
+/* 紧凑模式下播放列表高度限制 */
+.stm-compact .stm-playlist-area {
+    max-height: 150px;
+    min-height: 150px;
+    flex: none;
+}
+
+/* 播放列表区域 (扬声器网格纹理) */
+.stm-playlist-area {
+    flex: 1;
+    border-radius: 12px;
+    box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.1);
+    position: relative;
+    overflow: hidden;
+    background-image: radial-gradient(var(--stm-mesh-dot) 1.5px, transparent 1.5px);
+    background-size: 6px 6px;
+    background-color: #efefeb;
+}
+
+.stm-playlist-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(244, 244, 240, 0.8);
+    backdrop-filter: blur(1px);
+    padding: 12px;
+    overflow-y: auto;
+}
+
+.stm-playlist-empty {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: var(--stm-text-muted);
+    gap: 8px;
+    opacity: 0.6;
+}
+
+.stm-music-icon {
+    font-size: 24px;
+}
+
+.stm-empty-text {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+}
+
+/* 播放列表项 */
+.stm-track-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 10px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-size: 12px;
+    color: var(--stm-text-dark);
+}
+
+.stm-track-item:hover {
+    background: #fff;
+}
+
+.stm-track-item.active {
+    background: var(--stm-text-dark);
+    color: #fff;
+}
+
+.stm-track-info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex: 1;
+    min-width: 0;
+}
+
+.stm-track-num {
+    width: 20px;
+    font-size: 10px;
+    color: var(--stm-text-muted);
+}
+
+.stm-track-item.active .stm-track-num {
+    color: var(--stm-accent);
+}
+
+.stm-track-name {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-weight: 500;
+}
+
+.stm-track-delete {
+    opacity: 0;
+    background: transparent;
+    border: none;
+    color: var(--stm-text-muted);
+    cursor: pointer;
+    padding: 4px;
+    border-radius: 4px;
+    transition: all 0.2s;
+}
+
+.stm-track-item:hover .stm-track-delete {
+    opacity: 1;
+}
+
+.stm-track-delete:hover {
+    color: #ff4d4f;
+    background: rgba(255, 77, 79, 0.1);
+}
+
+.stm-track-item.active .stm-track-delete {
+    color: rgba(255, 255, 255, 0.5);
+}
+
+.stm-track-item.active .stm-track-delete:hover {
+    color: #fff;
+    background: rgba(255, 255, 255, 0.2);
+}
+
+/* 播放控件 */
+.stm-player-controls {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 0;
+}
+
+.stm-control-group {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+}
+
+.stm-ctrl-btn {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: #e6e6e2;
+    border: none;
+    box-shadow:
+        0 2px 4px rgba(0, 0, 0, 0.1),
+        inset 0 1px 2px rgba(255, 255, 255, 0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: var(--stm-text-sub);
+    transition: all 0.2s;
+}
+
+.stm-ctrl-btn:hover {
+    background: #dedede;
+}
+
+.stm-ctrl-btn:active {
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.stm-ctrl-label {
+    font-size: 9px;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    color: var(--stm-text-muted);
+}
+
+.stm-playback-group {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: #e6e6e2;
+    padding: 8px 12px;
+    border-radius: 50px;
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.stm-playback-group .stm-ctrl-btn {
+    width: 32px;
+    height: 32px;
+    background: transparent;
+    box-shadow: none;
+}
+
+.stm-play-btn {
+    width: 40px !important;
+    height: 40px !important;
+    background: var(--stm-text-dark) !important;
+    color: #fff !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
+}
+
+.stm-play-btn:hover {
+    background: #222 !important;
+}
+
+/* 右侧内容区域 */
+.stm-content-section {
+    flex: 1;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.stm-page {
+    flex: 1;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.stm-form-scroll {
+    flex: 1;
+    overflow-y: auto;
+    padding: 24px 32px;
+}
+
+/* 滚动条样式 */
+.stm-form-scroll::-webkit-scrollbar,
+.stm-playlist-overlay::-webkit-scrollbar {
+    width: 6px;
+}
+
+.stm-form-scroll::-webkit-scrollbar-track,
+.stm-playlist-overlay::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.stm-form-scroll::-webkit-scrollbar-thumb,
+.stm-playlist-overlay::-webkit-scrollbar-thumb {
+    background-color: #d1d1cf;
+    border-radius: 20px;
+}
+
+/* 表单组 */
+.stm-form-group {
+    margin-bottom: 28px;
+}
+
+.stm-label {
+    display: block;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    color: var(--stm-text-dark);
+    opacity: 0.6;
+    margin-bottom: 12px;
+}
+
+.stm-input-wrapper {
+    position: relative;
+}
+
+.stm-input {
+    width: 100%;
+    background: transparent;
+    border: none;
+    border-bottom: 2px solid var(--stm-border);
+    padding: 8px 0;
+    font-size: 1.4rem;
+    font-weight: 500;
+    color: var(--stm-text-dark);
+    letter-spacing: -0.5px;
+    transition: border-color 0.2s;
+    font-family: inherit;
+}
+
+.stm-input:focus {
+    outline: none;
+    border-bottom-color: var(--stm-accent);
+}
+
+.stm-input::placeholder {
+    color: #ccc;
+}
+
+.stm-hint {
+    position: absolute;
+    right: 0;
+    top: 12px;
+    font-size: 11px;
+    color: var(--stm-text-muted);
+    opacity: 0;
+    transition: opacity 0.2s;
+    pointer-events: none;
+}
+
+.stm-input-wrapper:hover .stm-hint {
+    opacity: 1;
+}
+
+/* 按钮网格 */
+.stm-btn-grid {
+    display: grid;
+    gap: 8px;
+}
+
+.stm-vocal-grid {
+    grid-template-columns: repeat(4, 1fr);
+}
+
+.stm-genre-grid {
+    grid-template-columns: repeat(3, 1fr);
+}
+
+.stm-subgenre-grid {
+    grid-template-columns: repeat(2, 1fr);
+}
+
+/* 切换按钮 */
+.stm-toggle-btn {
+    position: relative;
+    overflow: hidden;
+    transition: all 0.2s ease-out;
+    border: 1px solid transparent;
+    padding: 8px 12px;
+    background: #fff;
+    color: var(--stm-text-sub);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+    border-radius: 3px;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 13px;
+    text-align: left;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.stm-toggle-btn:hover {
+    background: #fafafa;
+}
+
+.stm-toggle-btn.active {
+    background: #e0e0dc;
+    color: var(--stm-text-dark);
+    font-weight: 600;
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.stm-toggle-btn.active::after {
+    content: '';
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--stm-accent);
+    flex-shrink: 0;
+}
+
+.stm-toggle-btn.full-width {
+    grid-column: span 2;
+}
+
+/* 性别选择器 */
+.stm-gender-selector {
+    margin-top: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(255, 255, 255, 0.5);
+    padding: 10px 12px;
+    border-radius: 8px;
+    border: 1px solid #eee;
+    animation: stm-fadeIn 0.3s ease;
+}
+
+.stm-gender-label {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    color: var(--stm-text-sub);
+}
+
+.stm-gender-btn {
+    padding: 4px 16px;
+    font-size: 12px;
+    border-radius: 50px;
+    border: 1px solid #ccc;
+    background: #fff;
+    color: var(--stm-text-sub);
+    cursor: pointer;
+    transition: all 0.2s;
+    font-family: inherit;
+}
+
+.stm-gender-btn:hover {
+    border-color: var(--stm-text-sub);
+}
+
+.stm-gender-btn.active {
+    background: var(--stm-text-dark);
+    color: #fff;
+    border-color: var(--stm-text-dark);
+}
+
+.stm-note {
+    font-size: 10px;
+    color: var(--stm-text-muted);
+    margin-top: 8px;
+    font-style: italic;
+}
+
+/* 子流派面板 */
+.stm-subgenre-panel {
+    background: #fff;
+    padding: 16px;
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    border: 1px solid #eee;
+    margin-top: 12px;
+    animation: stm-fadeIn 0.3s ease;
+}
+
+.stm-subgenre-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 12px;
+}
+
+.stm-subgenre-title {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    color: var(--stm-text-sub);
+}
+
+.stm-genre-desc {
+    flex: 1;
+    text-align: right;
+    font-size: 11px;
+    color: var(--stm-text-muted);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* 描述提示 */
+.stm-toggle-desc {
+    margin-top: 4px;
+    font-size: 10px;
+    color: var(--stm-text-sub);
+    line-height: 1.4;
+    padding-left: 4px;
+    animation: stm-fadeIn 0.3s ease;
+}
+
+/* 乐器容器 */
+.stm-instrument-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+}
+
+.stm-instrument-btn {
+    padding: 6px 14px;
+    border-radius: 50px;
+    font-size: 13px;
+    border: 1px solid #ccc;
+    background: transparent;
+    color: var(--stm-text-sub);
+    cursor: pointer;
+    transition: all 0.2s;
+    font-family: inherit;
+}
+
+.stm-instrument-btn:hover {
+    border-color: var(--stm-text-sub);
+}
+
+.stm-instrument-btn.active {
+    background: var(--stm-text-dark);
+    color: #fff;
+    border-color: var(--stm-text-dark);
+}
+
+.stm-instrument-btn.recommend {
+    border-style: dashed;
+    border-color: var(--stm-accent);
+    color: var(--stm-accent);
+}
+
+.stm-instrument-btn.recommend:hover,
+.stm-instrument-btn.recommend.active {
+    background: var(--stm-accent);
+    color: #fff;
+    border-color: var(--stm-accent);
+}
+
+.stm-instrument-input {
+    border: none;
+    border-bottom: 1px solid #ccc;
+    padding: 6px 8px;
+    font-size: 13px;
+    width: 120px;
+    background: transparent;
+    color: var(--stm-text-dark);
+    font-family: inherit;
+}
+
+.stm-instrument-input:focus {
+    outline: none;
+    border-bottom-color: var(--stm-text-dark);
+}
+
+/* 歌词选项 */
+.stm-lyric-options {
+    display: flex;
+    gap: 20px;
+    margin-bottom: 12px;
+}
+
+.stm-radio-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    font-size: 13px;
+    color: var(--stm-text-dark);
+}
+
+.stm-radio-label input[type="radio"] {
+    display: none;
+}
+
+.stm-radio-mark {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    border: 1px solid var(--stm-text-muted);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+}
+
+.stm-radio-label input[type="radio"]:checked+.stm-radio-mark {
+    background: var(--stm-text-dark);
+    border-color: var(--stm-text-dark);
+}
+
+.stm-radio-label input[type="radio"]:checked+.stm-radio-mark::after {
+    content: '';
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #fff;
+}
+
+.stm-lyric-input {
+    font-size: 14px !important;
+    padding: 12px !important;
+    background: #fff !important;
+    border: 1px solid #e0e0e0 !important;
+    border-radius: 4px !important;
+}
+
+.stm-lyric-input:focus {
+    border-color: #ccc !important;
+}
+
+/* 底部操作栏 */
+.stm-action-footer {
+    padding-top: 24px;
+    border-top: 1px solid #e0e0e0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.stm-author-info {
+    font-size: 10px;
+    color: var(--stm-text-muted);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.stm-create-btn {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: var(--stm-accent);
+    border: none;
+    color: #fff;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 10px 20px rgba(255, 68, 0, 0.3);
+    transition: all 0.2s;
+}
+
+.stm-create-btn:hover {
+    box-shadow: 0 15px 30px rgba(255, 68, 0, 0.4);
+    transform: scale(1.05);
+}
+
+.stm-create-btn:active {
+    transform: scale(0.95);
+    box-shadow: inset 0 4px 10px rgba(0, 0, 0, 0.2);
+}
+
+.stm-create-btn i {
+    font-size: 20px;
+    margin-left: 4px;
+}
+
+/* === 成果页面样式 === */
+.stm-results-container {
+    padding: 24px 32px;
+    height: 100%;
+    overflow-y: auto;
+}
+
+.stm-results-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 20px;
+    padding-bottom: 12px;
+    border-bottom: 2px solid var(--stm-border);
+}
+
+.stm-results-icon {
+    font-size: 24px;
+}
+
+.stm-results-title {
+    font-size: 1.4rem;
+    font-weight: 600;
+    color: var(--stm-text-dark);
+}
+
+.stm-result-section {
+    margin-bottom: 20px;
+}
+
+.stm-result-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--stm-accent);
+    margin-bottom: 8px;
+}
+
+.stm-result-label-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.stm-result-label-row span {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--stm-accent);
+}
+
+.stm-copy-btn {
+    padding: 4px 12px;
+    font-size: 11px;
+    border-radius: 4px;
+    border: 1px solid var(--stm-border);
+    background: #fff;
+    color: var(--stm-text-sub);
+    cursor: pointer;
+    transition: all 0.2s;
+    font-family: inherit;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.stm-copy-btn:hover {
+    background: var(--stm-text-dark);
+    color: #fff;
+    border-color: var(--stm-text-dark);
+}
+
+.stm-copy-btn.copied {
+    background: #10b981;
+    color: #fff;
+    border-color: #10b981;
+}
+
+.stm-result-content {
+    background: #fff;
+    border: 1px solid #eee;
+    border-radius: 8px;
+    padding: 16px;
+    font-size: 13px;
+    line-height: 1.6;
+    color: var(--stm-text-dark);
+    white-space: pre-wrap;
+    font-family: 'JetBrains Mono', monospace;
+}
+
+.stm-lyrics-content {
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.stm-placeholder {
+    color: var(--stm-text-sub);
+    font-style: normal;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+.stm-results-footer {
+    margin-top: 20px;
+    text-align: center;
+}
+
+.stm-refresh-btn {
+    padding: 10px 24px;
+    font-size: 13px;
+    border-radius: 8px;
+    border: 1px solid var(--stm-border);
+    background: var(--stm-surface-dark);
+    color: var(--stm-text-sub);
+    cursor: pointer;
+    transition: all 0.2s;
+    font-family: inherit;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.stm-refresh-btn:hover {
+    background: var(--stm-text-dark);
+    color: #fff;
+    border-color: var(--stm-text-dark);
+}
+
+/* 动画 */
+@keyframes stm-fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(5px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes stm-slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* 移动端适配 */
+@media (max-width: 768px) {
+    #st-music-toggle-btn {
+        top: 10px !important;
+        left: 50% !important;
+        transform: translateX(-50%) !important;
+        right: auto !important;
+        bottom: auto !important;
+    }
+
+    /* 顶部安全距离布局 - 避免底部被遮挡，同时也防止顶部溢出 */
+    #st-music-panel {
+        position: fixed !important;
+        top: 15vh !important;
+        bottom: auto !important;
+        left: 50% !important;
+        right: auto !important;
+        transform: translateX(-50%) !important;
+        width: 95vw !important;
+        height: auto !important;
+        max-width: none !important;
+        max-height: 80vh !important;
+        border-radius: 1rem;
+        padding-bottom: 0;
+    }
+
+    #st-music-panel.stm-compact {
+        top: 15vh !important;
+        bottom: auto !important;
+        left: 50% !important;
+        right: auto !important;
+        transform: translateX(-50%) !important;
+        width: 90vw !important;
+        height: auto !important;
+        max-height: 60vh !important;
+        border-radius: 1rem;
+        padding-bottom: 0;
+    }
+
+    .stm-body {
+        flex-direction: column;
+    }
+
+    .stm-player-section {
+        width: 100%;
+        height: 200px;
+        flex-shrink: 0;
+        border-right: none;
+        border-bottom: 1px solid var(--stm-border);
+        flex-direction: row;
+    }
+
+    .stm-playlist-area {
+        flex: 1;
+    }
+
+    .stm-player-controls {
+        flex-direction: column;
+        padding: 0 12px;
+    }
+
+    .stm-vocal-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .stm-genre-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .stm-form-scroll {
+        padding: 16px;
+    }
+}
+
+/* 紧凑模式：标签按钮仅显示图标 */
+.stm-compact .stm-tab-btn .stm-tab-text {
+    display: none;
+}
+
+.stm-compact .stm-tab-btn {
+    padding: 6px 10px;
+}

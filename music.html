@@ -1,0 +1,213 @@
+<div id="st-music-root">
+    <div id="st-music-panel">
+        <!-- 1. 标题栏 -->
+        <div class="stm-header">
+            <div class="stm-logo-title">
+                <span class="stm-disc-icon"><i class="fa-solid fa-compact-disc"></i></span>
+                <span class="stm-brand">BRAUN</span>
+                <span class="stm-model">AUDIO 310</span>
+            </div>
+            <div class="stm-header-controls">
+                <!-- 页面切换按钮 -->
+                <button class="stm-tab-btn active" id="stm-tab-player" title="播放器"><i
+                        class="fa-solid fa-headphones"></i><span class="stm-tab-text"> 播放器</span></button>
+                <button class="stm-tab-btn" id="stm-tab-create" title="创作页面"><i class="fa-solid fa-palette"></i><span
+                        class="stm-tab-text">
+                        创作</span></button>
+                <button class="stm-tab-btn" id="stm-tab-results" title="成果页面"><i
+                        class="fa-solid fa-file-lines"></i><span class="stm-tab-text">
+                        成果</span></button>
+                <button class="stm-icon-btn" id="stm-btn-close" title="关闭">✕</button>
+            </div>
+        </div>
+
+        <!-- 2. 主体区域 -->
+        <div class="stm-body">
+            <!-- 左侧：播放器区域 (两页共享) -->
+            <div class="stm-player-section">
+                <!-- 播放列表区域 (扬声器网格纹理背景) -->
+                <div class="stm-playlist-area">
+                    <div class="stm-playlist-overlay" id="stm-playlist">
+                        <div class="stm-playlist-empty">
+                            <span class="stm-music-icon"><i class="fa-solid fa-music"></i></span>
+                            <span class="stm-empty-text">No Tape Loaded</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 播放控件 -->
+                <div class="stm-player-controls">
+                    <!-- 上传按钮 -->
+                    <div class="stm-control-group">
+                        <input type="file" id="stm-file-input" accept="audio/mp3,audio/*" multiple
+                            style="display:none;">
+                        <button class="stm-ctrl-btn stm-upload-btn" id="stm-btn-upload" title="Upload MP3">
+                            <i class="fa-solid fa-upload"></i>
+                        </button>
+                        <span class="stm-ctrl-label">Load</span>
+                    </div>
+
+                    <!-- 播放控制组 -->
+                    <div class="stm-playback-group">
+                        <button class="stm-ctrl-btn" id="stm-btn-prev" title="上一曲">
+                            <i class="fa-solid fa-backward-step"></i>
+                        </button>
+                        <button class="stm-ctrl-btn stm-play-btn" id="stm-btn-play" title="播放/暂停">
+                            <i class="fa-solid fa-play" id="stm-play-icon"></i>
+                        </button>
+                        <button class="stm-ctrl-btn" id="stm-btn-next" title="下一曲">
+                            <i class="fa-solid fa-forward-step"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 右侧：内容区域 -->
+            <div class="stm-content-section">
+
+                <!-- 创作页面 (默认显示) -->
+                <div class="stm-page" id="stm-page-create">
+                    <div class="stm-form-scroll">
+
+                        <!-- 01 / Creator Profile -->
+                        <div class="stm-form-group">
+                            <label class="stm-label">01 / Creator Profile</label>
+                            <div class="stm-input-wrapper">
+                                <input type="text" id="stm-char-name" class="stm-input"
+                                    placeholder="Enter Character Name...">
+                                <span class="stm-hint">你想要让哪个角色来创作音乐？</span>
+                            </div>
+                        </div>
+
+                        <!-- 02 / Vocal Range -->
+                        <div class="stm-form-group">
+                            <label class="stm-label">02 / Vocal Range</label>
+                            <div class="stm-btn-grid stm-vocal-grid" id="stm-vocal-btns">
+                                <!-- JS will populate -->
+                            </div>
+                            <!-- 性别子选项 (仅当选择"根据人设推断"时显示) -->
+                            <div class="stm-gender-selector" id="stm-gender-selector" style="display:none;">
+                                <span class="stm-gender-label">指定性别:</span>
+                                <button class="stm-gender-btn" data-gender="男">男 (Male)</button>
+                                <button class="stm-gender-btn" data-gender="女">女 (Female)</button>
+                            </div>
+                            <p class="stm-note">* 如果不确定角色的音域，请选择最后一项由 AI 判断</p>
+                        </div>
+
+                        <!-- 03 / Musical Genre -->
+                        <div class="stm-form-group">
+                            <label class="stm-label">03 / Musical Genre</label>
+                            <div class="stm-btn-grid stm-genre-grid" id="stm-genre-btns">
+                                <!-- JS will populate main genres -->
+                            </div>
+                            <!-- 子流派面板 -->
+                            <div class="stm-subgenre-panel" id="stm-subgenre-panel" style="display:none;">
+                                <div class="stm-subgenre-header">
+                                    <span class="stm-music-icon"><i class="fa-solid fa-sliders"></i></span>
+                                    <span class="stm-subgenre-title">Sub-Genre</span>
+                                    <span class="stm-genre-desc" id="stm-genre-desc"></span>
+                                </div>
+                                <div class="stm-btn-grid stm-subgenre-grid" id="stm-subgenre-btns">
+                                    <!-- JS will populate sub genres -->
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 04 / Lead Instrument -->
+                        <div class="stm-form-group" id="stm-instrument-group" style="display:none;">
+                            <label class="stm-label">04 / Lead Instrument</label>
+                            <div class="stm-instrument-container" id="stm-instrument-btns">
+                                <!-- JS will populate -->
+                            </div>
+                        </div>
+
+                        <!-- 05 / Lyrics Concept -->
+                        <div class="stm-form-group">
+                            <label class="stm-label">05 / Lyrics Concept</label>
+                            <div class="stm-lyric-options">
+                                <label class="stm-radio-label">
+                                    <input type="radio" name="lyricMode" value="custom" checked>
+                                    <span class="stm-radio-mark"></span>
+                                    <span>自定义关键词</span>
+                                </label>
+                                <label class="stm-radio-label">
+                                    <input type="radio" name="lyricMode" value="plot">
+                                    <span class="stm-radio-mark"></span>
+                                    <span>根据剧情回忆创作</span>
+                                </label>
+                            </div>
+                            <input type="text" id="stm-lyric-keywords" class="stm-input stm-lyric-input"
+                                placeholder="输入你想要的歌词关键词...">
+                        </div>
+
+                        <!-- 生成按钮区域 -->
+                        <div class="stm-action-footer">
+                            <div class="stm-author-info">
+                                插件作者 · JLYANG1900 · https://github.com/JLYANG1900
+                            </div>
+                            <button class="stm-create-btn" id="stm-btn-generate" title="发送至SillyTavern">
+                                <i class="fa-solid fa-play"></i>
+                            </button>
+                        </div>
+
+                    </div>
+                </div>
+
+                <!-- 成果页面 (切换显示) -->
+                <div class="stm-page" id="stm-page-results" style="display:none;">
+                    <div class="stm-results-container">
+                        <div class="stm-results-header">
+                            <span class="stm-results-icon"><i class="fa-solid fa-pen-to-square"></i></span>
+                            <span class="stm-results-title">Creation Notes</span>
+                        </div>
+
+                        <!-- 歌名显示 -->
+                        <div class="stm-result-section">
+                            <div class="stm-result-label">一、歌名</div>
+                            <div class="stm-result-content" id="stm-result-title">
+                                <span class="stm-placeholder">等待 LLM 返回创作笔记...</span>
+                            </div>
+                        </div>
+
+                        <!-- 歌词显示 -->
+                        <div class="stm-result-section">
+                            <div class="stm-result-label-row">
+                                <span>二、中文歌词结构</span>
+                                <button class="stm-copy-btn" id="stm-copy-lyrics" title="复制歌词">
+                                    <i class="fa-solid fa-copy"></i> 复制歌词
+                                </button>
+                            </div>
+                            <div class="stm-result-content stm-lyrics-content" id="stm-result-lyrics">
+                                <span class="stm-placeholder">等待 LLM 返回创作笔记...</span>
+                            </div>
+                        </div>
+
+                        <!-- 风格显示 -->
+                        <div class="stm-result-section">
+                            <div class="stm-result-label-row">
+                                <span>三、风格</span>
+                                <button class="stm-copy-btn" id="stm-copy-style" title="复制风格">
+                                    <i class="fa-solid fa-copy"></i> 复制风格
+                                </button>
+                            </div>
+                            <div class="stm-result-content" id="stm-result-style">
+                                <span class="stm-placeholder">等待 LLM 返回创作笔记...</span>
+                            </div>
+                        </div>
+
+                        <!-- 刷新按钮 -->
+                        <div class="stm-results-footer">
+                            <button class="stm-refresh-btn" id="stm-btn-refresh-notes">
+                                <i class="fa-solid fa-rotate"></i> 刷新捕捉
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- 隐藏的音频播放器 -->
+    <audio id="stm-audio-player"></audio>
+</div>
