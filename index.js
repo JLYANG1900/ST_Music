@@ -864,25 +864,9 @@ const GENRE_DATA = { /* ... (保留原有 Genre Data, 这里省略以节省篇�
         async loadPlaylist() {
             this.player.playlist = [];
 
-            // 1. Load Official Playlist.json
-            try {
-                // Determine path (similar to init logic)
-                const playlistUrl = new URL('./playlist.json', import.meta.url).href;
-                const response = await fetch(playlistUrl);
-                if (response.ok) {
-                    const officialTracks = await response.json();
-                    officialTracks.forEach(t => {
-                        this.player.playlist.push({
-                            name: t.name,
-                            url: t.url,
-                            id: Math.random().toString(36).substr(2, 9),
-                            type: 'official' // official | local | link
-                        });
-                    });
-                }
-            } catch (e) {
-                console.warn("[ST Music] Failed to load playlist.json", e);
-            }
+            // 1. Load Official Playlist.json (Removed)
+            // this.player.playlist = []; // Ensure clear start
+
 
             // 2. Load User Links from LocalStorage
             try {
