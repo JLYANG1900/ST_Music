@@ -508,7 +508,8 @@
     border: none;
     border-bottom: 2px solid var(--stm-border);
     padding: 8px 0;
-    font-size: 1.4rem;
+    font-size: 1.6rem;
+    /* Slightly larger as per screenshot */
     font-weight: 500;
     color: var(--stm-text-dark);
     letter-spacing: -0.5px;
@@ -522,7 +523,8 @@
 }
 
 .stm-input::placeholder {
-    color: #ccc;
+    color: #d1d1cf;
+    /* Lighter grey effectively matching the screenshot */
 }
 
 .stm-hint {
@@ -750,18 +752,22 @@
     background: transparent;
     color: var(--stm-text-dark);
     font-family: inherit;
+    transition: border-bottom-color 0.2s;
 }
 
 .stm-instrument-input:focus {
     outline: none;
-    border-bottom-color: var(--stm-text-dark);
+    border-bottom-color: var(--stm-accent);
+    /* Highlight on focus */
 }
 
 /* 歌词选项 */
+/* 歌词选项 */
 .stm-lyric-options {
     display: flex;
-    gap: 20px;
-    margin-bottom: 12px;
+    gap: 24px;
+    margin-bottom: 16px;
+    align-items: center;
 }
 
 .stm-radio-label {
@@ -771,6 +777,7 @@
     cursor: pointer;
     font-size: 13px;
     color: var(--stm-text-dark);
+    font-weight: 500;
 }
 
 .stm-radio-label input[type="radio"] {
@@ -778,14 +785,16 @@
 }
 
 .stm-radio-mark {
-    width: 16px;
-    height: 16px;
+    width: 18px;
+    height: 18px;
     border-radius: 50%;
     border: 1px solid var(--stm-text-muted);
     display: flex;
     align-items: center;
     justify-content: center;
     transition: all 0.2s;
+    background: #fff;
+    flex-shrink: 0;
 }
 
 .stm-radio-label input[type="radio"]:checked+.stm-radio-mark {
@@ -799,18 +808,24 @@
     height: 6px;
     border-radius: 50%;
     background: #fff;
+    flex-shrink: 0;
 }
 
 .stm-lyric-input {
+    width: 100%;
     font-size: 14px !important;
     padding: 12px !important;
     background: #fff !important;
     border: 1px solid #e0e0e0 !important;
     border-radius: 4px !important;
+    box-sizing: border-box;
+    color: var(--stm-text-dark);
+    transition: border-color 0.2s;
 }
 
 .stm-lyric-input:focus {
-    border-color: #ccc !important;
+    border-color: var(--stm-accent) !important;
+    outline: none;
 }
 
 /* 底部操作栏 */
