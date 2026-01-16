@@ -495,8 +495,15 @@ const GENRE_DATA = { /* ... (保留原有 Genre Data, 这里省略以节省篇�
             }
 
             if (linkBtn) {
-                linkBtn.onclick = () => this.handleAddLink();
+                linkBtn.onclick = () => this.openLinkModal();
             }
+
+            // Modal Events
+            const modalCancel = document.getElementById("stm-modal-cancel");
+            const modalConfirm = document.getElementById("stm-modal-confirm");
+
+            if (modalCancel) modalCancel.onclick = () => this.closeLinkModal();
+            if (modalConfirm) modalConfirm.onclick = () => this.confirmAddLink();
 
             if (playBtn) playBtn.onclick = () => this.togglePlay();
             if (prevBtn) prevBtn.onclick = () => this.prevTrack();
@@ -889,30 +896,59 @@ const GENRE_DATA = { /* ... (保留原有 Genre Data, 这里省略以节省篇�
             this.renderPlaylist();
         },
 
-        // 添加外部链接
-        handleAddLink() {
-            const url = prompt("请输入音乐链接 (例如 https://files.catbox.moe/...):");
-            if (!url) return;
+        // 打开添加链接模态框
+        openLinkModal() {
+            const modal = document.getElementById("stm-link-modal");
+            const urlInput = document.getElementById("stm-link-url");
+            const nameInput = document.getElementById("stm-link-name");
 
-            // 简单验证
-            if (!url.startsWith("http")) {
-                if (typeof toastr !== "undefined") toastr.error("请输入有效的 URL");
+            if (modal && urlInput && nameInput) {
+                urlInput.value = "";
+                nameInput.value = "";
+                modal.style.display = "flex";
+                urlInput.focus();
+            }
+        },
+
+        // 关闭模态框
+        closeLinkModal() {
+            const modal = document.getElementById("stm-link-modal");
+            if (modal) modal.style.display = "none";
+        },
+
+        // 确认添加链接
+        confirmAddLink() {
+            const urlInput = document.getElementById("stm-link-url");
+            const nameInput = document.getElementById("stm-link-name");
+
+            if (!urlInput) return;
+
+            const url = urlInput.value.trim();
+            let name = nameInput.value.trim();
+
+            if (!url) {
+                if (typeof toastr !== "undefined") toastr.warning("请输入有效的 URL");
                 else alert("请输入有效的 URL");
                 return;
             }
 
-            // 提取文件名作为默认标题
-            let name = "未知歌曲";
-            try {
-                const urlObj = new URL(url);
-                const pathName = urlObj.pathname;
-                name = pathName.substring(pathName.lastIndexOf('/') + 1) || "User Link";
-                name = decodeURIComponent(name);
-            } catch (e) { }
+            // 简单验证
+            if (!url.startsWith("http")) {
+                if (typeof toastr !== "undefined") toastr.error("请输入以 http/https 开头的链接");
+                else alert("请输入以 http/https 开头的链接");
+                return;
+            }
 
-            // 允许用户重命名
-            const customName = prompt("请输入歌曲标题:", name);
-            if (customName) name = customName;
+            // 自动提取文件名
+            if (!name) {
+                name = "未知歌曲";
+                try {
+                    const urlObj = new URL(url);
+                    const pathName = urlObj.pathname;
+                    name = pathName.substring(pathName.lastIndexOf('/') + 1) || "User Link";
+                    name = decodeURIComponent(name);
+                } catch (e) { }
+            }
 
             const newTrack = { name, url };
 
@@ -929,6 +965,7 @@ const GENRE_DATA = { /* ... (保留原有 Genre Data, 这里省略以节省篇�
 
             if (typeof toastr !== "undefined") toastr.success("已添加并保存！");
             this.renderPlaylist();
+            this.closeLinkModal();
         },
 
         saveUserLink(track) {
