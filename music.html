@@ -145,6 +145,29 @@
                                 placeholder="输入你想要的歌词关键词...">
                         </div>
 
+                        <!-- 06 / Output Mode -->
+                        <div class="stm-form-group">
+                            <label class="stm-label">06 / Output Mode</label>
+                            <div class="stm-lyric-options">
+                                <label class="stm-radio-label">
+                                    <input type="radio" name="outputMode" value="only_notes">
+                                    <span class="stm-radio-mark"></span>
+                                    <span>只生成创作笔记</span>
+                                </label>
+                                <label class="stm-radio-label">
+                                    <input type="radio" name="outputMode" value="mixed" checked>
+                                    <span class="stm-radio-mark"></span>
+                                    <span>嵌入正文 (默认)</span>
+                                </label>
+                                <label class="stm-radio-label">
+                                    <input type="radio" name="outputMode" value="filtered">
+                                    <span class="stm-radio-mark"></span>
+                                    <span>只保留在插件 (过滤)</span>
+                                </label>
+                            </div>
+                            <p class="stm-note">* "只保留在插件" 需手动启用正则脚本：regex-ST_Music_不发送创作笔记</p>
+                        </div>
+
                         <!-- 生成按钮区域 -->
                         <div class="stm-action-footer">
                             <div class="stm-author-info">
@@ -177,7 +200,7 @@
                         <!-- 歌词显示 -->
                         <div class="stm-result-section">
                             <div class="stm-result-label-row">
-                                <span>二、中文歌词结构</span>
+                                <span>二、歌词结构</span>
                                 <button class="stm-copy-btn" id="stm-copy-lyrics" title="复制歌词">
                                     <i class="fa-solid fa-copy"></i> 复制歌词
                                 </button>

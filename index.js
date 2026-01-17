@@ -2,36 +2,6 @@
 
 console.log("🎵 [ST Music] 脚本文件已加载 (Client Mode)");
 
-const extensionName = "st-music-creator";
-
-// --- 数据常量 ---
-const VOCAL_RANGES = [
-    "女高音 (Soprano)", "女中音 (Mezzo-Soprano)", "女低音 (Contralto)",
-    "男高音 (Tenor)", "男中音 (Baritone)", "男低音 (Bass)",
-    "根据人设推断合适的人声音域"
-];
-
-const GENRE_DATA = { /* ... (保留原有 Genre Data, 这里省略以节省篇幅，实际应用时需完整保留) ... */
-    "流行音乐 (Pop)": { desc: "大众流行。", bpms: "110-130", instruments: ["合成器", "吉他", "钢琴"], sub: [{ name: "Synth-Pop", desc: "复古合成器" }] },
-    "摇滚乐 (Rock)": { desc: "吉他与鼓。", bpms: "120-150", instruments: ["电吉他", "贝斯", "架子鼓"], sub: [{ name: "Alternative Rock", desc: "另类摇滚" }] },
-    // 为了节省 token，这里我只保留部分结构，实际上应该保留全部数据。
-    // 请确保之前的数据完整性。为了安全起见，我会请求 view_file 再次获取完整数据再写入？
-    // 不，我可以把之前的 GENRE_DATA 完整复制过来。
-};
-// 实际上 GENRE_DATA 太长了，为了稳妥，我会在下一步使用 modify_file 只替换逻辑部分，保留数据部分。
-// 但这里我选择了 overwrite 整个文件，因为我要删除尾部的 Server Code。
-// 所以我必须提供完整的 GENRE_DATA。
-// 让我们假设我可以获取到完整数据。
-// Wait, to be safe, I should use `multi_replace` or keep the data part intact.
-// I'll stick to replacing the LOGIC parts and deleting the end.
-
-// PLAN CHANGE: I will use `replace_file_content` to removing the Server Code block first.
-// Then `replace_file_content` to update the Logic.
-// This preserves GENRE_DATA.
-
-// This tool call is cancelled. I will switch to multi-step to preserve data.
-
-
 // ----------------------------------------------------------------------
 // BROWSER / FRONTEND CONTEXT
 // ----------------------------------------------------------------------
@@ -225,7 +195,8 @@ const GENRE_DATA = { /* ... (保留原有 Genre Data, 这里省略以节省篇�
             instrument: [],
             customInstrument: "",
             lyricMode: "custom",
-            lyricKeywords: ""
+            lyricKeywords: "",
+            outputMode: "mixed"
         },
 
         // 播放器状态
@@ -461,6 +432,13 @@ const GENRE_DATA = { /* ... (保留原有 Genre Data, 这里省略以节省篇�
             const lyricInput = document.getElementById("stm-lyric-keywords");
             if (lyricInput) lyricInput.oninput = (e) => { this.state.lyricKeywords = e.target.value; };
 
+            // 输出模式
+            document.querySelectorAll("input[name='outputMode']").forEach(radio => {
+                radio.onchange = (e) => {
+                    this.state.outputMode = e.target.value;
+                };
+            });
+
             // 生成按钮
             const genBtn = document.getElementById("stm-btn-generate");
             if (genBtn) genBtn.onclick = () => this.generateAndInject();
@@ -648,6 +626,9 @@ const GENRE_DATA = { /* ... (保留原有 Genre Data, 这里省略以节省篇�
             container.appendChild(recBtn);
 
             // 自定义输入
+            const wrapper = document.createElement("div");
+            wrapper.className = "stm-instrument-wrapper";
+
             const customInput = document.createElement("input");
             customInput.type = "text";
             customInput.className = "stm-instrument-input";
@@ -659,7 +640,13 @@ const GENRE_DATA = { /* ... (保留原有 Genre Data, 这里省略以节省篇�
                     document.querySelectorAll("#stm-instrument-btns .stm-instrument-btn").forEach(b => b.classList.remove("active"));
                 }
             };
-            container.appendChild(customInput);
+            customInput.onclick = () => {
+                this.state.instrument = [];
+                document.querySelectorAll("#stm-instrument-btns .stm-instrument-btn").forEach(b => b.classList.remove("active"));
+            };
+
+            wrapper.appendChild(customInput);
+            container.appendChild(wrapper);
         },
 
         selectInstrument(inst, btn) {
@@ -740,11 +727,10 @@ const GENRE_DATA = { /* ... (保留原有 Genre Data, 这里省略以节省篇�
                 genderChar = finalVocal.charAt(0);
             }
 
-            const fullText = `（根据当前故事及过往回忆，以${this.state.charName}的视角写一个音乐创作笔记）
-严格遵循以下格式及要求输出回复：
-<music>
+            // Base music note template
+            const musicNoteTemplate = `<music>
 一、歌名
-二、中文歌词结构：
+二、歌词结构：
 [Verse]
 [Pre-Chorus]
 [Chorus]
@@ -758,8 +744,30 @@ const GENRE_DATA = { /* ... (保留原有 Genre Data, 这里省略以节省篇�
 1.公式：[${mainGenreName}] + [${subGenreName}] + [${instrumentText}] + [角色的情绪]
 2.BPM (i*/): ${bpm}
 3.人声指定：${genderChar} ${finalVocal}
-</music>
-注意：必须用<music>与</music>包裹这部分输出内容`;
+</music>`;
+
+            let fullText = "";
+
+            if (this.state.outputMode === "only_notes") {
+                // Only Notes: AI generates ONLY the music creation note
+                fullText = `（以${this.state.charName}的视角写一个音乐创作笔记，只输出笔记，不需要生成任何故事正文）
+严格遵循以下格式及要求输出回复：
+${musicNoteTemplate}
+注意：只输出music与/music标签内的创作笔记（包含歌名、歌词、风格），不要有其他内容`;
+            } else if (this.state.outputMode === "filtered") {
+                // Filtered: AI generates story + music note, but we'll filter it later
+                // Add instruction to place music note at the very end for easier extraction
+                fullText = `（根据当前故事及过往回忆，以${this.state.charName}的视角写一个音乐创作笔记，包含歌名、歌词、风格）
+严格遵循以下格式及要求输出回复：
+${musicNoteTemplate}
+注意：必须用music与/music标签包裹这部分输出内容，并将其放在回复的最末尾`;
+            } else {
+                // Mixed (default): Original behavior
+                fullText = `（根据当前故事及过往回忆，以${this.state.charName}的视角写一个音乐创作笔记，包含歌名、歌词、风格）
+严格遵循以下格式及要求输出回复：
+${musicNoteTemplate}
+注意：必须用music与/music标签包裹这部分输出内容`;
+            }
 
             // 注入到 SillyTavern 输入框
             const textarea = document.getElementById('send_textarea');
@@ -818,7 +826,7 @@ const GENRE_DATA = { /* ... (保留原有 Genre Data, 这里省略以节省篇�
             this.capturedNotes.title = titleMatch ? titleMatch[1].trim() : "";
 
             // 解析歌词
-            const lyricsMatch = content.match(/二、中文歌词结构[：:\s]*([\s\S]*?)(?=三、|$)/i);
+            const lyricsMatch = content.match(/二、歌词结构[：:\s]*([\s\S]*?)(?=三、|$)/i);
             this.capturedNotes.lyrics = lyricsMatch ? lyricsMatch[1].trim() : "";
 
             // 解析风格
@@ -850,8 +858,8 @@ const GENRE_DATA = { /* ... (保留原有 Genre Data, 这里省略以节省篇�
                 if (typeof toastr !== "undefined") toastr.warning("没有内容可复制");
                 return;
             }
-            // 简单清洗格式
-            const cleanText = text.replace(/\[.*?\]/g, "").trim();
+            // 移除自动清洗格式，以免误删 [风格] 等关键信息
+            const cleanText = text.trim();
 
             navigator.clipboard.writeText(cleanText).then(() => {
                 const originalHTML = btn.innerHTML;
