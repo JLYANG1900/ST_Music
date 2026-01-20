@@ -51,8 +51,6 @@ ST_Music 是一款为 SillyTavern 设计的沉浸式音乐创作与播放插件�
     ```
 4.  Find the extension in the list and enable it.
     *   在列表中找到该插件并启用。
-5.  **Restart SillyTavern** (Server Restart Required)
-    *   *⚠️ 必须重启后台控制台，以加载负责文件上传的后端脚本。*
 
 ### Method 2: Manual Installation (Git Clone)
 1.  进入 SillyTavern 插件目录：
