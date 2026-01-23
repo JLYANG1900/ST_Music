@@ -96,6 +96,16 @@
                                 <button class="stm-gender-btn" data-gender="男">男 (Male)</button>
                                 <button class="stm-gender-btn" data-gender="女">女 (Female)</button>
                             </div>
+                            <!-- 声部音色面板 -->
+                            <div class="stm-timbre-panel" id="stm-timbre-panel">
+                                <div class="stm-timbre-header">
+                                    <span class="stm-music-icon"><i class="fa-solid fa-microphone"></i></span>
+                                    <span class="stm-timbre-title">声部音色</span>
+                                </div>
+                                <div class="stm-btn-grid stm-timbre-grid" id="stm-timbre-btns">
+                                    <!-- JS will populate -->
+                                </div>
+                            </div>
                             <p class="stm-note">* 如果不确定角色的音域，请选择最后一项由 AI 判断</p>
                         </div>
 
@@ -129,20 +139,44 @@
                         <!-- 05 / Lyrics Concept -->
                         <div class="stm-form-group">
                             <label class="stm-label">05 / Lyrics Concept</label>
-                            <div class="stm-lyric-options">
-                                <label class="stm-radio-label">
-                                    <input type="radio" name="lyricMode" value="custom" checked>
-                                    <span class="stm-radio-mark"></span>
-                                    <span>自定义关键词</span>
-                                </label>
-                                <label class="stm-radio-label">
-                                    <input type="radio" name="lyricMode" value="plot">
-                                    <span class="stm-radio-mark"></span>
-                                    <span>根据剧情回忆创作</span>
-                                </label>
+                            <div class="stm-lyrics-panel" id="stm-lyrics-panel">
+                                <!-- 歌词语言 -->
+                                <div class="stm-lyrics-section">
+                                    <div class="stm-lyrics-section-header">
+                                        <span class="stm-music-icon"><i class="fa-solid fa-language"></i></span>
+                                        <span class="stm-lyrics-section-title">歌词语言</span>
+                                    </div>
+                                    <div class="stm-btn-grid stm-lang-grid" id="stm-lang-btns">
+                                        <!-- JS will populate -->
+                                    </div>
+                                    <input type="text" id="stm-lang-custom" class="stm-lyrics-custom-input"
+                                        placeholder="其他语言...">
+                                </div>
+
+                                <!-- 创作模式 -->
+                                <div class="stm-lyrics-section">
+                                    <div class="stm-lyrics-section-header">
+                                        <span class="stm-music-icon"><i class="fa-solid fa-pen-nib"></i></span>
+                                        <span class="stm-lyrics-section-title">歌词内容</span>
+                                    </div>
+                                    <div class="stm-btn-grid stm-mode-grid" id="stm-lyric-mode-btns">
+                                        <!-- JS will populate -->
+                                    </div>
+                                    <input type="text" id="stm-lyric-keywords" class="stm-lyrics-custom-input"
+                                        placeholder="输入你想要的歌词关键词...">
+                                </div>
+
+                                <!-- 韵脚方案 -->
+                                <div class="stm-lyrics-section">
+                                    <div class="stm-lyrics-section-header">
+                                        <span class="stm-music-icon"><i class="fa-solid fa-headphones"></i></span>
+                                        <span class="stm-lyrics-section-title">韵脚方案</span>
+                                    </div>
+                                    <div class="stm-btn-grid stm-rhyme-grid" id="stm-rhyme-btns">
+                                        <!-- JS will populate -->
+                                    </div>
+                                </div>
                             </div>
-                            <input type="text" id="stm-lyric-keywords" class="stm-input stm-lyric-input"
-                                placeholder="输入你想要的歌词关键词...">
                         </div>
 
                         <!-- 06 / Output Mode -->

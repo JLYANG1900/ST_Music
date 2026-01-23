@@ -504,33 +504,40 @@
 
 .stm-input {
     width: 100%;
-    background: transparent;
-    border: none;
-    border-bottom: 2px solid var(--stm-border);
-    padding: 8px 0;
-    font-size: 1.6rem;
-    /* Slightly larger as per screenshot */
-    font-weight: 500;
-    color: var(--stm-text-dark);
-    letter-spacing: -0.5px;
+    background: transparent !important;
+    border: none !important;
+    border-bottom: 2px solid var(--stm-border) !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    padding: 8px 0 !important;
+    font-size: 1.5rem !important;
+    /* text-2xl */
+    font-weight: 500 !important;
+    color: var(--stm-text-dark) !important;
+    letter-spacing: -0.025em !important;
+    /* tracking-tight */
     transition: border-color 0.2s;
     font-family: inherit;
 }
 
 .stm-input:focus {
-    outline: none;
-    border-bottom-color: var(--stm-accent);
+    outline: none !important;
+    border-bottom-color: var(--stm-accent) !important;
+    box-shadow: none !important;
 }
 
 .stm-input::placeholder {
-    color: #d1d1cf;
-    /* Lighter grey effectively matching the screenshot */
+    color: #d1d5db !important;
+    /* placeholder-gray-300 */
+    opacity: 1;
+    /* Ensure firefox doesn't dim it */
 }
 
 .stm-hint {
     position: absolute;
     right: 0;
-    top: 12px;
+    top: 1rem;
+    /* top-4 usually 1rem */
     font-size: 11px;
     color: var(--stm-text-muted);
     opacity: 0;
@@ -654,6 +661,40 @@
     font-style: italic;
 }
 
+/* 声部音色面板 */
+.stm-timbre-panel {
+    background: #fff;
+    padding: 16px;
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    border: 1px solid #eee;
+    margin-top: 12px;
+    animation: stm-fadeIn 0.3s ease;
+}
+
+.stm-timbre-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 12px;
+}
+
+.stm-timbre-title {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    color: var(--stm-text-sub);
+}
+
+.stm-timbre-grid {
+    grid-template-columns: repeat(4, 1fr);
+}
+
+.stm-timbre-grid .stm-toggle-btn.full-width {
+    grid-column: span 4;
+}
+
 /* 子流派面板 */
 .stm-subgenre-panel {
     background: #fff;
@@ -700,6 +741,87 @@
     animation: stm-fadeIn 0.3s ease;
 }
 
+/* 歌词概念综合面板 */
+.stm-lyrics-panel {
+    background: #fff;
+    padding: 16px;
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    border: 1px solid #eee;
+    animation: stm-fadeIn 0.3s ease;
+}
+
+.stm-lyrics-section {
+    margin-bottom: 16px;
+}
+
+.stm-lyrics-section:last-child {
+    margin-bottom: 0;
+}
+
+.stm-lyrics-section-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 10px;
+}
+
+.stm-lyrics-section-title {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    color: var(--stm-text-sub);
+}
+
+.stm-lyrics-custom-input {
+    width: 100%;
+    margin-top: 8px;
+    background: transparent !important;
+    border: none !important;
+    border-bottom: 1px solid var(--stm-border) !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    padding: 6px 0 !important;
+    font-size: 13px !important;
+    color: var(--stm-text-dark) !important;
+    transition: border-color 0.2s;
+    font-family: inherit;
+}
+
+.stm-lyrics-custom-input:focus {
+    outline: none !important;
+    border-bottom-color: var(--stm-text-dark) !important;
+}
+
+.stm-lyrics-custom-input::placeholder {
+    color: #aaa;
+}
+
+/* 歌词语言网格 */
+.stm-lang-grid {
+    grid-template-columns: repeat(2, 1fr);
+}
+
+/* 创作模式网格 */
+.stm-mode-grid {
+    grid-template-columns: repeat(2, 1fr);
+}
+
+/* 韵脚方案网格 - 1+2+2 布局 */
+.stm-rhyme-grid {
+    grid-template-columns: repeat(2, 1fr);
+}
+
+.stm-rhyme-wrapper {
+    display: flex;
+    flex-direction: column;
+}
+
+.stm-rhyme-wrapper:first-child {
+    grid-column: span 2;
+}
+
 /* 乐器容器 */
 .stm-instrument-container {
     display: flex;
@@ -743,22 +865,41 @@
     border-color: var(--stm-accent);
 }
 
-.stm-instrument-input {
-    border: none;
+/* Custom Instrument Input Wrapper */
+.stm-instrument-wrapper {
+    display: flex;
+    align-items: center;
+    margin-left: 0.5rem;
+    /* ml-2 */
     border-bottom: 1px solid #ccc;
-    padding: 6px 8px;
-    font-size: 13px;
-    width: 120px;
-    background: transparent;
-    color: var(--stm-text-dark);
-    font-family: inherit;
     transition: border-bottom-color 0.2s;
+    background: transparent !important;
+    box-shadow: none !important;
+}
+
+.stm-instrument-wrapper:focus-within {
+    border-bottom-color: var(--stm-text-dark) !important;
+    /* focus-within:border-[#333] */
+}
+
+.stm-instrument-input {
+    border: none !important;
+    padding: 4px 8px !important;
+    /* py-1 px-2 */
+    font-size: 0.875rem !important;
+    /* text-sm */
+    width: 8rem !important;
+    /* w-32 */
+    background: transparent !important;
+    color: var(--stm-text-dark) !important;
+    font-family: inherit;
+    box-shadow: none !important;
+    outline: none !important;
 }
 
 .stm-instrument-input:focus {
-    outline: none;
-    border-bottom-color: var(--stm-accent);
-    /* Highlight on focus */
+    outline: none !important;
+    box-shadow: none !important;
 }
 
 /* 歌词选项 */
@@ -771,9 +912,10 @@
 }
 
 .stm-radio-label {
-    display: flex;
-    align-items: center;
-    gap: 8px;
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    gap: 8px !important;
     cursor: pointer;
     font-size: 13px;
     color: var(--stm-text-dark);
@@ -785,48 +927,79 @@
 }
 
 .stm-radio-mark {
-    width: 18px;
-    height: 18px;
-    border-radius: 50%;
-    border: 1px solid var(--stm-text-muted);
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    width: 1rem !important;
+    height: 1rem !important;
+    border-radius: 50% !important;
+    border: 1px solid var(--stm-text-muted) !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
     transition: all 0.2s;
+    background: transparent !important;
+    flex-shrink: 0 !important;
+}
+
+
+
+.stm-lyric-input {
+    width: 100%;
     background: #fff;
-    flex-shrink: 0;
+    border: 1px solid #e0e0e0;
+    padding: 0.75rem;
+    /* p-3 */
+    font-size: 0.875rem;
+    /* text-sm */
+    color: var(--stm-text-dark);
+    border-radius: 0.125rem;
+    /* rounded-sm */
+    transition: border-color 0.2s;
+    outline: none;
+}
+
+.stm-lyric-input:focus {
+    border-color: #ccc;
 }
 
 .stm-radio-label input[type="radio"]:checked+.stm-radio-mark {
-    background: var(--stm-text-dark);
     border-color: var(--stm-text-dark);
+    /* border-[#333] */
+    background: var(--stm-text-dark);
+    /* bg-[#333] */
 }
 
+/* Inner white dot */
 .stm-radio-label input[type="radio"]:checked+.stm-radio-mark::after {
     content: '';
-    width: 6px;
-    height: 6px;
-    border-radius: 50%;
+    width: 0.375rem;
+    /* w-1.5 */
+    height: 0.375rem;
+    /* h-1.5 */
     background: #fff;
-    flex-shrink: 0;
+    border-radius: 50%;
+    display: block;
 }
 
 .stm-lyric-input {
     width: 100%;
-    font-size: 14px !important;
-    padding: 12px !important;
     background: #fff !important;
     border: 1px solid #e0e0e0 !important;
-    border-radius: 4px !important;
-    box-sizing: border-box;
-    color: var(--stm-text-dark);
+    padding: 0.75rem !important;
+    /* p-3 */
+    font-size: 0.875rem !important;
+    /* text-sm */
+    color: var(--stm-text-dark) !important;
+    border-radius: 0.125rem !important;
+    /* rounded-sm */
     transition: border-color 0.2s;
+    outline: none !important;
+    box-shadow: none !important;
 }
 
 .stm-lyric-input:focus {
-    border-color: var(--stm-accent) !important;
-    outline: none;
+    border-color: #ccc !important;
 }
+
+
 
 /* 底部操作栏 */
 .stm-action-footer {

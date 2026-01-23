@@ -23,6 +23,27 @@ console.log("🎵 [ST Music] 脚本文件已加载 (Client Mode)");
         "根据人设推断合适的人声音域"
     ];
 
+    // 韵脚方案数据
+    const RHYME_SCHEMES = [
+        { name: "不押韵", desc: "" },
+        { name: "ABCB (二四押韵)", desc: "听感：自然、不刻意，给听众一种\"期待感\"并在偶数句得到释放。例子：周杰伦《晴天》" },
+        { name: "AABB (双行押韵)", desc: "听感：节奏感强，朗朗上口，常用于副歌（Chorus）或儿歌、洗脑歌。例子：筷子兄弟《小苹果》" },
+        { name: "ABAB (交叉押韵)", desc: "听感：更有韵律跳跃感。例子：邓丽君《月亮代表我的心》" },
+        { name: "AAAA (全行押韵)", desc: "听感：极具冲击力，常用于说唱（Rap）或情感非常激烈的段落，但也容易显得单调。" }
+    ];
+
+    // 声部音色数据
+    const VOICE_TIMBRES = [
+        "Auto (自动)",
+        "Husky (烟嗓/沙哑)",
+        "Clean (清澈/标准)",
+        "Warm (温暖/磁性)",
+        "Gritty (粗砺/颗粒感)",
+        "Bright (明亮/尖细)",
+        "Dark (暗淡/深沉)",
+        "Soulful (深情/灵魂)"
+    ];
+
     const GENRE_DATA = {
         "流行音乐 (Pop)": {
             desc: "具有极强的包容性，常与其他流派融合，主要以商业成功和大众审美为导向。",
@@ -188,6 +209,7 @@ console.log("🎵 [ST Music] 脚本文件已加载 (Client Mode)");
         state: {
             charName: "",
             vocalRange: "",
+            voiceTimbre: "",
             aiGender: "",
             mainGenre: "",
             subGenre: "",
@@ -196,6 +218,9 @@ console.log("🎵 [ST Music] 脚本文件已加载 (Client Mode)");
             customInstrument: "",
             lyricMode: "custom",
             lyricKeywords: "",
+            lyricLanguage: "",
+            customLang: "",
+            rhymeScheme: "",
             outputMode: "mixed"
         },
 
@@ -221,7 +246,11 @@ console.log("🎵 [ST Music] 脚本文件已加载 (Client Mode)");
             if (this.panelLoaded) {
                 this.bindEvents();
                 this.renderVocalButtons();
+                this.renderVoiceTimbreButtons();
                 this.renderGenreButtons();
+                this.renderLyricsLanguageButtons();
+                this.renderLyricModeButtons();
+                this.renderRhymeSchemeButtons();
                 this.loadPlaylist(); // Load persistent playlist
             }
         },
@@ -419,14 +448,21 @@ console.log("🎵 [ST Music] 脚本文件已加载 (Client Mode)");
                 };
             });
 
-            // 歌词模式
-            document.querySelectorAll("input[name='lyricMode']").forEach(radio => {
-                radio.onchange = (e) => {
-                    this.state.lyricMode = e.target.value;
-                    const input = document.getElementById("stm-lyric-keywords");
-                    if (input) input.style.display = e.target.value === 'custom' ? 'block' : 'none';
+            // 自定义语言输入
+            const langCustomInput = document.getElementById("stm-lang-custom");
+            if (langCustomInput) {
+                langCustomInput.oninput = (e) => {
+                    this.state.customLang = e.target.value;
+                    if (e.target.value) {
+                        this.state.lyricLanguage = "";
+                        document.querySelectorAll("#stm-lang-btns .stm-toggle-btn").forEach(b => b.classList.remove("active"));
+                    }
                 };
-            });
+                langCustomInput.onclick = () => {
+                    this.state.lyricLanguage = "";
+                    document.querySelectorAll("#stm-lang-btns .stm-toggle-btn").forEach(b => b.classList.remove("active"));
+                };
+            }
 
             // 歌词关键词输入
             const lyricInput = document.getElementById("stm-lyric-keywords");
@@ -523,6 +559,27 @@ console.log("🎵 [ST Music] 脚本文件已加载 (Client Mode)");
             }
         },
 
+        // 渲染声部音色按钮
+        renderVoiceTimbreButtons() {
+            const container = document.getElementById("stm-timbre-btns");
+            if (!container) return;
+
+            container.innerHTML = "";
+            VOICE_TIMBRES.forEach(timbre => {
+                const btn = document.createElement("button");
+                btn.className = "stm-toggle-btn" + (timbre.includes("Auto") ? " full-width" : "");
+                btn.textContent = timbre;
+                btn.onclick = () => this.selectVoiceTimbre(timbre, btn);
+                container.appendChild(btn);
+            });
+        },
+
+        selectVoiceTimbre(timbre, btn) {
+            document.querySelectorAll("#stm-timbre-btns .stm-toggle-btn").forEach(b => b.classList.remove("active"));
+            btn.classList.add("active");
+            this.state.voiceTimbre = timbre;
+        },
+
         renderGenreButtons() {
             const container = document.getElementById("stm-genre-btns");
             if (!container) return;
@@ -595,6 +652,102 @@ console.log("🎵 [ST Music] 脚本文件已加载 (Client Mode)");
             descEl.className = "stm-toggle-desc";
             descEl.textContent = sub.desc;
             btn.parentElement.appendChild(descEl);
+        },
+
+        // 渲染歌词语言按钮
+        renderLyricsLanguageButtons() {
+            const container = document.getElementById("stm-lang-btns");
+            if (!container) return;
+
+            container.innerHTML = "";
+            const languages = ["中文", "英文"];
+            languages.forEach(lang => {
+                const btn = document.createElement("button");
+                btn.className = "stm-toggle-btn";
+                btn.textContent = lang;
+                btn.onclick = () => this.selectLyricsLanguage(lang, btn);
+                container.appendChild(btn);
+            });
+        },
+
+        selectLyricsLanguage(lang, btn) {
+            document.querySelectorAll("#stm-lang-btns .stm-toggle-btn").forEach(b => b.classList.remove("active"));
+            btn.classList.add("active");
+            this.state.lyricLanguage = lang;
+            this.state.customLang = "";
+            const customInput = document.getElementById("stm-lang-custom");
+            if (customInput) customInput.value = "";
+        },
+
+        // 渲染歌词创作模式按钮
+        renderLyricModeButtons() {
+            const container = document.getElementById("stm-lyric-mode-btns");
+            if (!container) return;
+
+            container.innerHTML = "";
+            const modes = [
+                { value: "custom", label: "自定义关键词" },
+                { value: "plot", label: "根据剧情回忆创作" }
+            ];
+            modes.forEach(mode => {
+                const btn = document.createElement("button");
+                btn.className = "stm-toggle-btn" + (mode.value === "custom" ? " active" : "");
+                btn.textContent = mode.label;
+                btn.dataset.mode = mode.value;
+                btn.onclick = () => this.selectLyricMode(mode.value, btn);
+                container.appendChild(btn);
+            });
+        },
+
+        selectLyricMode(mode, btn) {
+            document.querySelectorAll("#stm-lyric-mode-btns .stm-toggle-btn").forEach(b => b.classList.remove("active"));
+            btn.classList.add("active");
+            this.state.lyricMode = mode;
+
+            const keywordsInput = document.getElementById("stm-lyric-keywords");
+            if (keywordsInput) {
+                keywordsInput.style.display = mode === "custom" ? "block" : "none";
+            }
+        },
+
+        // 渲染韵脚方案按钮
+        renderRhymeSchemeButtons() {
+            const container = document.getElementById("stm-rhyme-btns");
+            if (!container) return;
+
+            container.innerHTML = "";
+            RHYME_SCHEMES.forEach(scheme => {
+                const wrapper = document.createElement("div");
+                wrapper.className = "stm-rhyme-wrapper";
+
+                const btn = document.createElement("button");
+                btn.className = "stm-toggle-btn";
+                btn.textContent = scheme.name;
+                btn.onclick = () => this.selectRhymeScheme(scheme, btn);
+
+                wrapper.appendChild(btn);
+                container.appendChild(wrapper);
+            });
+        },
+
+        selectRhymeScheme(scheme, btn) {
+            // 移除所有选中状态和描述
+            document.querySelectorAll("#stm-rhyme-btns .stm-toggle-btn").forEach(b => {
+                b.classList.remove("active");
+                const descEl = b.parentElement.querySelector(".stm-toggle-desc");
+                if (descEl) descEl.remove();
+            });
+
+            btn.classList.add("active");
+            this.state.rhymeScheme = scheme.name;
+
+            // 如果有描述则显示
+            if (scheme.desc) {
+                const descEl = document.createElement("p");
+                descEl.className = "stm-toggle-desc";
+                descEl.textContent = scheme.desc;
+                btn.parentElement.appendChild(descEl);
+            }
         },
 
         renderInstruments(mainGenre) {
@@ -720,11 +873,35 @@ console.log("🎵 [ST Music] 脚本文件已加载 (Client Mode)");
                 keywordText = "（根据剧情及回忆自动生成）";
             }
 
+            // 歌词语言文本
+            let langText = "";
+            if (this.state.customLang) {
+                langText = `；语言：${this.state.customLang}`;
+            } else if (this.state.lyricLanguage) {
+                langText = `；语言：${this.state.lyricLanguage}`;
+            }
+
             let genderChar = "";
             if (this.state.vocalRange === "根据人设推断合适的人声音域") {
                 genderChar = this.state.aiGender;
             } else {
                 genderChar = finalVocal.charAt(0);
+            }
+
+            // 韵脚方案文本
+            let rhymeText = "";
+            if (this.state.rhymeScheme && this.state.rhymeScheme !== "不押韵") {
+                rhymeText = `；韵脚方案：${this.state.rhymeScheme}`;
+            }
+
+            // 声部音色文本
+            let timbreText = "";
+            if (this.state.voiceTimbre) {
+                if (this.state.voiceTimbre.includes("Auto")) {
+                    timbreText = " | 音色：根据角色人设推断合理的音色";
+                } else {
+                    timbreText = ` | 音色：${this.state.voiceTimbre}`;
+                }
             }
 
             // Base music note template
@@ -739,11 +916,12 @@ console.log("🎵 [ST Music] 脚本文件已加载 (Client Mode)");
 [Bridge]
 [Final Chorus]
 要求：
-每段2-4行；副歌一定要重复关键词；不要一整段长句；关键词${keywordText}
+每段2-4行；副歌一定要重复关键词；不要一整段长句；关键词${keywordText}${langText}${rhymeText}
 三、风格
 1.公式：[${mainGenreName}] + [${subGenreName}] + [${instrumentText}] + [角色的情绪]
 2.BPM (i*/): ${bpm}
-3.人声指定：${genderChar} ${finalVocal}
+3.人声指定：${genderChar} ${finalVocal}${timbreText}
+不仅要列出乐器，还要描述它在"做什么"。句式：The instrumentation features [Instrument] playing [Action]...
 </music>`;
 
             let fullText = "";
@@ -753,20 +931,20 @@ console.log("🎵 [ST Music] 脚本文件已加载 (Client Mode)");
                 fullText = `（以${this.state.charName}的视角写一个音乐创作笔记，只输出笔记，不需要生成任何故事正文）
 严格遵循以下格式及要求输出回复：
 ${musicNoteTemplate}
-注意：只输出music与/music标签内的创作笔记（包含歌名、歌词、风格），不要有其他内容`;
+（注意：只输出music与/music标签内的创作笔记（包含歌名、歌词、风格），不要有其他内容）`;
             } else if (this.state.outputMode === "filtered") {
                 // Filtered: AI generates story + music note, but we'll filter it later
                 // Add instruction to place music note at the very end for easier extraction
                 fullText = `（根据当前故事及过往回忆，以${this.state.charName}的视角写一个音乐创作笔记，包含歌名、歌词、风格）
 严格遵循以下格式及要求输出回复：
 ${musicNoteTemplate}
-注意：必须用music与/music标签包裹这部分输出内容，并将其放在回复的最末尾`;
+（注意：必须用music与/music标签包裹这部分输出内容，并将其放在回复的最末尾，不要放在正文中。歌名、歌词结构、风格，三个模块连贯输出，中间不要断开）`;
             } else {
                 // Mixed (default): Original behavior
                 fullText = `（根据当前故事及过往回忆，以${this.state.charName}的视角写一个音乐创作笔记，包含歌名、歌词、风格）
 严格遵循以下格式及要求输出回复：
 ${musicNoteTemplate}
-注意：必须用music与/music标签包裹这部分输出内容`;
+（注意：必须用music与/music标签包裹这部分输出内容，并将其放在回复的最末尾，不要放在正文中。歌名、歌词结构、风格，三个模块连贯输出，中间不要断开）`;
             }
 
             // 注入到 SillyTavern 输入框

@@ -71,5 +71,28 @@ ST_Music 是一款为 SillyTavern 设计的沉浸式音乐创作与播放插件�
 4.  复制 Prompt 到 Suno 生成音乐。
 5.  下载 MP3，点击播放器上的 **Upload** 图标上传，即可在酒馆内循环播放！
 
+## 📝 更新日志 (Changelog)
+
+### 2026-01-23
+- **新增「韵脚方案」模块** (05 / Lyrics Concept)
+  - 5 个选项：不押韵、ABCB (二四押韵)、AABB (双行押韵)、ABAB (交叉押韵)、AAAA (全行押韵)
+  - 点击按钮后显示听感描述与歌曲例子
+
+- **新增「声部音色」模块** (02 / Vocal Range)
+  - 8 个选项：Auto (自动)、Husky (烟嗓)、Clean (清澈)、Warm (温暖)、Gritty (粗砺)、Bright (明亮)、Dark (暗淡)、Soulful (深情)
+  - 选择 Auto 时，根据角色自动推断合理音色
+
+- **新增「歌词语言」模块** (05 / Lyrics Concept)
+  - 支持中文、英文两个快捷选项
+  - 支持自定义其他语言
+
+- **优化「05 / Lyrics Concept」面板布局**
+  - 所有模块整合到统一白色面板内
+  - 创作模式改为 BRAUN 风格按钮
+
+- **增强乐器提示词**
+  - 新增指令要求 AI 描述乐器"在做什么"
+  - 句式：The instrumentation features [Instrument] playing [Action]...
+
 ---
 *Created by JLYANG1900*
