@@ -1,7 +1,7 @@
 {
     "display_name": "ST Music Creator",
     "author": "JLYANG1900",
-    "version": "1.0.0",
+    "version": "1.1.0",
     "description": "AI音乐创作助手 - Braun SK4风格的音乐提示词生成器与播放器。允许用户选择角色、音域、流派、乐器和歌词关键词，生成创作提示词发送至ST，并捕捉LLM返回的创作笔记。",
     "js": "index.js",
     "css": "style.css",
