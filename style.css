@@ -457,6 +457,7 @@
     overflow: hidden;
     display: flex;
     flex-direction: column;
+    position: relative;
 }
 
 .stm-form-scroll {
@@ -1409,4 +1410,441 @@
 
 .stm-btn-primary:hover {
     background: #000;
+}
+
+/* ========== 设置页面样式 ========== */
+
+.stm-settings-card {
+    background: #fff;
+    padding: 16px;
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    border: 1px solid #eee;
+}
+
+.stm-settings-field {
+    margin-bottom: 14px;
+}
+
+.stm-settings-field:last-child {
+    margin-bottom: 0;
+}
+
+.stm-settings-field-label {
+    display: block;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--stm-text-sub);
+    margin-bottom: 6px;
+}
+
+.stm-settings-field .stm-input {
+    font-size: 14px !important;
+    font-weight: 400 !important;
+}
+
+.stm-settings-hint {
+    position: static;
+    opacity: 1;
+    display: block;
+    margin-top: 4px;
+    font-size: 10px;
+    color: var(--stm-text-muted);
+}
+
+.stm-settings-row {
+    display: flex;
+    gap: 16px;
+}
+
+.stm-settings-half {
+    flex: 1;
+}
+
+.stm-settings-btn-row {
+    display: flex;
+    gap: 8px;
+    margin-top: 12px;
+}
+
+.stm-settings-save-btn {
+    background: var(--stm-text-dark) !important;
+    color: #fff !important;
+    border-color: var(--stm-text-dark) !important;
+}
+
+.stm-settings-save-btn:hover {
+    background: #222 !important;
+}
+
+.stm-settings-info {
+    font-size: 12px;
+    color: var(--stm-text-sub);
+    line-height: 1.8;
+}
+
+.stm-settings-info p {
+    margin: 0;
+}
+
+.stm-select {
+    appearance: auto;
+    cursor: pointer;
+}
+
+/* ========== "只生成创作笔记" 按钮 ========== */
+
+.stm-note-only-btn {
+    background: transparent !important;
+    border: 2px solid var(--stm-text-dark) !important;
+    color: var(--stm-text-dark) !important;
+    box-shadow: none !important;
+}
+
+.stm-note-only-btn:hover {
+    background: var(--stm-text-dark) !important;
+    color: #fff !important;
+}
+
+.stm-note-only-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* ========== 加载状态指示器 ========== */
+
+.stm-loading-indicator {
+    text-align: center;
+    padding: 16px;
+    font-size: 13px;
+    color: var(--stm-text-sub);
+    animation: stm-fadeIn 0.3s ease;
+}
+
+.stm-loading-indicator i {
+    margin-right: 6px;
+    color: var(--stm-accent);
+}
+
+/* ========== 历史记录面板 ========== */
+
+.stm-history-btn {
+    margin-left: auto;
+    background: transparent;
+    border: 1px solid var(--stm-border);
+    color: var(--stm-text-sub);
+    padding: 4px 10px;
+    font-size: 11px;
+    font-family: inherit;
+    cursor: pointer;
+    border-radius: 4px;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.stm-history-btn:hover {
+    border-color: var(--stm-text-sub);
+    color: var(--stm-text-dark);
+}
+
+.stm-history-overlay {
+    position: absolute;
+    inset: 0;
+    background: var(--stm-surface);
+    z-index: 10;
+    display: flex;
+    flex-direction: column;
+    animation: stm-fadeIn 0.2s ease;
+    overflow: hidden;
+}
+
+.stm-history-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 24px;
+    border-bottom: 1px solid var(--stm-border);
+    flex-shrink: 0;
+}
+
+.stm-history-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--stm-text-dark);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.stm-history-close {
+    background: transparent;
+    border: 1px solid var(--stm-border);
+    color: var(--stm-text-sub);
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    border-radius: 4px;
+    font-size: 13px;
+    transition: all 0.2s;
+}
+
+.stm-history-close:hover {
+    background: var(--stm-text-dark);
+    color: #fff;
+    border-color: var(--stm-text-dark);
+}
+
+.stm-history-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 12px 24px;
+}
+
+.stm-history-empty {
+    text-align: center;
+    color: var(--stm-text-muted);
+    font-size: 13px;
+    padding: 40px 0;
+}
+
+.stm-history-entry {
+    border: 1px solid var(--stm-border);
+    border-radius: 8px;
+    margin-bottom: 10px;
+    overflow: hidden;
+    background: #fff;
+}
+
+.stm-history-entry-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 14px;
+    cursor: pointer;
+    transition: background 0.15s;
+}
+
+.stm-history-entry-header:hover {
+    background: #fafafa;
+}
+
+.stm-history-source {
+    color: var(--stm-text-muted);
+    font-size: 12px;
+    flex-shrink: 0;
+}
+
+.stm-history-entry-title {
+    flex: 1;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--stm-text-dark);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.stm-history-time {
+    font-size: 10px;
+    color: var(--stm-text-muted);
+    flex-shrink: 0;
+}
+
+.stm-history-chevron {
+    color: var(--stm-text-muted);
+    font-size: 10px;
+    transition: transform 0.2s;
+    flex-shrink: 0;
+}
+
+.stm-history-detail {
+    border-top: 1px solid var(--stm-border);
+    padding: 14px;
+    background: #fcfcfb;
+    animation: stm-fadeIn 0.2s ease;
+}
+
+.stm-history-detail-section {
+    margin-bottom: 12px;
+}
+
+.stm-history-detail-section:last-of-type {
+    margin-bottom: 0;
+}
+
+.stm-history-detail-label {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--stm-text-sub);
+    margin-bottom: 6px;
+}
+
+.stm-history-detail-content {
+    font-size: 12px;
+    color: var(--stm-text-dark);
+    line-height: 1.6;
+    max-height: 120px;
+    overflow-y: auto;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+.stm-history-detail-actions {
+    margin-top: 12px;
+    display: flex;
+    gap: 8px;
+}
+
+.stm-history-load-btn {
+    font-size: 12px !important;
+}
+
+/* ========== 预览面板 ========== */
+
+.stm-preview-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.stm-preview-confirm-btn {
+    background: var(--stm-accent) !important;
+    color: #fff !important;
+    border-color: var(--stm-accent) !important;
+    font-size: 12px !important;
+    padding: 6px 14px !important;
+}
+
+.stm-preview-confirm-btn:hover {
+    background: var(--stm-accent-hover) !important;
+}
+
+.stm-preview-badge {
+    font-size: 9px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    padding: 2px 6px;
+    border-radius: 3px;
+    background: #eee;
+    color: var(--stm-text-muted);
+    flex-shrink: 0;
+}
+
+.stm-preview-content {
+    font-size: 12px;
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--stm-text-dark);
+    line-height: 1.7;
+    white-space: pre-wrap;
+    word-break: break-word;
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.stm-preview-textarea {
+    width: 100%;
+    min-height: 100px;
+    max-height: 200px;
+    padding: 10px 12px;
+    font-size: 12px;
+    font-family: inherit;
+    color: var(--stm-text-dark);
+    background: #fff;
+    border: 1px solid var(--stm-border);
+    border-radius: 6px;
+    resize: vertical;
+    line-height: 1.6;
+    box-sizing: border-box;
+    transition: border-color 0.2s;
+}
+
+.stm-preview-textarea:focus {
+    outline: none;
+    border-color: var(--stm-accent);
+}
+
+.stm-preview-textarea::placeholder {
+    color: var(--stm-text-muted);
+    font-style: italic;
+}
+
+.stm-preview-badge-edit {
+    background: #e8f0fe;
+    color: #4285f4;
+}
+
+/* ========== Other Requirements ========== */
+
+.stm-other-req-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.stm-other-req-row .stm-input {
+    flex: 1;
+}
+
+.stm-dice-btn {
+    flex-shrink: 0;
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    padding: 0 !important;
+}
+
+.stm-dice-btn:hover i {
+    animation: stm-dice-shake 0.4s ease;
+}
+
+@keyframes stm-dice-shake {
+
+    0%,
+    100% {
+        transform: rotate(0deg);
+    }
+
+    25% {
+        transform: rotate(-15deg);
+    }
+
+    75% {
+        transform: rotate(15deg);
+    }
+}
+
+/* ========== Output Mode Text ========== */
+
+.stm-output-mode-text {
+    display: block;
+    font-size: 12px;
+    line-height: 1.6;
+    color: var(--stm-text-sub);
+    font-style: normal;
+}
+
+/* ========== Token Counter ========== */
+
+.stm-token-count {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 11px;
+    color: var(--stm-text-muted);
+    padding: 4px 8px;
+    background: #f5f5f3;
+    border-radius: 4px;
+    flex-shrink: 0;
 }

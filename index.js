@@ -10,6 +10,34 @@ console.log("🎵 [ST Music] 脚本文件已加载 (Client Mode)");
     console.log("🎵 [ST Music] 脚本文件已加载");
 
     const extensionName = "st-music-creator";
+    const extensionPath = `scripts/extensions/third-party/ST_Music`;
+
+    // --- 加载独立API模块 ---
+    function loadExternalScripts() {
+        return new Promise((resolve, reject) => {
+            const scripts = [
+                `${extensionPath}/musicApiService.js`,
+                `${extensionPath}/musicSettings.js`,
+            ];
+            let loaded = 0;
+            scripts.forEach((src) => {
+                const script = document.createElement("script");
+                script.src = src;
+                script.onload = () => {
+                    loaded++;
+                    if (loaded === scripts.length) {
+                        console.log("🎵 [ST Music] 独立API模块加载完成");
+                        resolve();
+                    }
+                };
+                script.onerror = () => {
+                    console.error("🎵 [ST Music] 加载失败:", src);
+                    reject(new Error(`Failed to load ${src}`));
+                };
+                document.head.appendChild(script);
+            });
+        });
+    }
 
     // --- 数据常量 ---
 
@@ -221,7 +249,7 @@ console.log("🎵 [ST Music] 脚本文件已加载 (Client Mode)");
             lyricLanguage: "",
             customLang: "",
             rhymeScheme: "",
-            outputMode: "mixed"
+            otherRequirements: ""
         },
 
         // 播放器状态
@@ -244,6 +272,13 @@ console.log("🎵 [ST Music] 脚本文件已加载 (Client Mode)");
             this.injectToggleButton();
             await this.loadHTML();
             if (this.panelLoaded) {
+                // 加载独立API模块
+                try {
+                    await loadExternalScripts();
+                    this.initSettingsPage();
+                } catch (e) {
+                    console.warn("🎵 [ST Music] 独立API模块加载失败，设置功能不可用:", e);
+                }
                 this.bindEvents();
                 this.renderVocalButtons();
                 this.renderVoiceTimbreButtons();
@@ -252,6 +287,17 @@ console.log("🎵 [ST Music] 脚本文件已加载 (Client Mode)");
                 this.renderLyricModeButtons();
                 this.renderRhymeSchemeButtons();
                 this.loadPlaylist(); // Load persistent playlist
+            }
+        },
+
+        // 初始化设置页面
+        initSettingsPage() {
+            if (!window.MusicSettings) return;
+            const settingsPage = document.getElementById("stm-page-settings");
+            if (settingsPage) {
+                const content = window.MusicSettings.createSettingsPage();
+                settingsPage.appendChild(content);
+                window.MusicSettings.bindSettingsEvents();
             }
         },
 
@@ -338,7 +384,7 @@ console.log("🎵 [ST Music] 脚本文件已加载 (Client Mode)");
             panel.style.paddingBottom = '0';
         },
 
-        // 切换页面 (播放器/创作/成果)
+        // 切换页面 (播放器/创作/成果/设置)
         toggleView(viewName) {
             this.currentView = viewName;
 
@@ -346,12 +392,19 @@ console.log("🎵 [ST Music] 脚本文件已加载 (Client Mode)");
             const contentSection = document.querySelector(".stm-content-section");
             const createPage = document.getElementById("stm-page-create");
             const resultsPage = document.getElementById("stm-page-results");
+            const settingsPage = document.getElementById("stm-page-settings");
             const tabPlayer = document.getElementById("stm-tab-player");
             const tabCreate = document.getElementById("stm-tab-create");
             const tabResults = document.getElementById("stm-tab-results");
+            const tabSettings = document.getElementById("stm-tab-settings");
 
             // 重置所有标签状态
-            [tabPlayer, tabCreate, tabResults].forEach(t => t && t.classList.remove('active'));
+            [tabPlayer, tabCreate, tabResults, tabSettings].forEach(t => t && t.classList.remove('active'));
+
+            // 隐藏所有内容页面
+            if (createPage) createPage.style.display = 'none';
+            if (resultsPage) resultsPage.style.display = 'none';
+            if (settingsPage) settingsPage.style.display = 'none';
 
             if (viewName === 'player') {
                 // 紧凑播放器模式
@@ -378,13 +431,14 @@ console.log("🎵 [ST Music] 脚本文件已加载 (Client Mode)");
 
                 if (viewName === 'create') {
                     if (createPage) createPage.style.display = 'flex';
-                    if (resultsPage) resultsPage.style.display = 'none';
                     if (tabCreate) tabCreate.classList.add('active');
-                } else {
-                    if (createPage) createPage.style.display = 'none';
+                } else if (viewName === 'results') {
                     if (resultsPage) resultsPage.style.display = 'flex';
                     if (tabResults) tabResults.classList.add('active');
                     this.captureCreationNotes();
+                } else if (viewName === 'settings') {
+                    if (settingsPage) settingsPage.style.display = 'flex';
+                    if (tabSettings) tabSettings.classList.add('active');
                 }
             }
         },
@@ -418,9 +472,11 @@ console.log("🎵 [ST Music] 脚本文件已加载 (Client Mode)");
             const tabPlayer = document.getElementById("stm-tab-player");
             const tabCreate = document.getElementById("stm-tab-create");
             const tabResults = document.getElementById("stm-tab-results");
+            const tabSettings = document.getElementById("stm-tab-settings");
             if (tabPlayer) tabPlayer.onclick = () => this.toggleView('player');
             if (tabCreate) tabCreate.onclick = () => this.toggleView('create');
             if (tabResults) tabResults.onclick = () => this.toggleView('results');
+            if (tabSettings) tabSettings.onclick = () => this.toggleView('settings');
 
             // 初始化为播放器视图
             this.toggleView('player');
@@ -468,20 +524,47 @@ console.log("🎵 [ST Music] 脚本文件已加载 (Client Mode)");
             const lyricInput = document.getElementById("stm-lyric-keywords");
             if (lyricInput) lyricInput.oninput = (e) => { this.state.lyricKeywords = e.target.value; };
 
-            // 输出模式
-            document.querySelectorAll("input[name='outputMode']").forEach(radio => {
-                radio.onchange = (e) => {
-                    this.state.outputMode = e.target.value;
+            // Other Requirements 输入
+            const otherReqInput = document.getElementById("stm-other-requirements");
+            if (otherReqInput) otherReqInput.oninput = (e) => { this.state.otherRequirements = e.target.value; };
+
+            // Other Requirements 骰子按钮
+            const diceBtn = document.getElementById("stm-btn-dice-req");
+            if (diceBtn) {
+                diceBtn.onclick = () => {
+                    const presets = ["Piano Solo Intro", "Vocals Start Immediately", "Cinematic Intro", "Acappella Intro", "Ethereal Ambient Intro", "Dark & Tense Intro", "Dreamy Lo-fi Intro", "Acoustic Guitar Strumming", "Heavy Drum Fill Intro", "Orchestral Swell Intro", "Synthesizer Arpeggio Intro", "Melodic Violin Solo Intro", "Silence then Impact"];
+                    const picked = presets[Math.floor(Math.random() * presets.length)];
+                    if (otherReqInput) {
+                        otherReqInput.value = picked;
+                        this.state.otherRequirements = picked;
+                    }
                 };
-            });
+            }
+
 
             // 生成按钮
             const genBtn = document.getElementById("stm-btn-generate");
             if (genBtn) genBtn.onclick = () => this.generateAndInject();
 
+            // 独立API生成按钮
+            const genNoteBtn = document.getElementById("stm-btn-generate-note");
+            if (genNoteBtn) genNoteBtn.onclick = () => this.generateNoteOnly();
+
             // 刷新捕捉按钮
             const refreshBtn = document.getElementById("stm-btn-refresh-notes");
             if (refreshBtn) refreshBtn.onclick = () => this.captureCreationNotes();
+
+            // 历史记录按钮
+            const historyBtn = document.getElementById("stm-btn-history");
+            if (historyBtn) historyBtn.onclick = () => this.toggleHistory(true);
+            const historyCloseBtn = document.getElementById("stm-history-close");
+            if (historyCloseBtn) historyCloseBtn.onclick = () => this.toggleHistory(false);
+
+            // 预览面板按钮
+            const previewCloseBtn = document.getElementById("stm-preview-close");
+            if (previewCloseBtn) previewCloseBtn.onclick = () => this.hidePreview();
+            const previewConfirmBtn = document.getElementById("stm-preview-confirm");
+            if (previewConfirmBtn) previewConfirmBtn.onclick = () => this.confirmPreview();
 
             // 复制按钮
             const copyLyricsBtn = document.getElementById("stm-copy-lyrics");
@@ -921,31 +1004,13 @@ console.log("🎵 [ST Music] 脚本文件已加载 (Client Mode)");
 1.公式：[${mainGenreName}] + [${subGenreName}] + [${instrumentText}] + [角色的情绪]
 2.BPM (i*/): ${bpm}
 3.人声指定：${genderChar} ${finalVocal}${timbreText}
-不仅要列出乐器，还要描述它在"做什么"。句式：The instrumentation features [Instrument] playing [Action]...
+${this.state.otherRequirements ? this.state.otherRequirements + '\n' : ''}不仅要列出乐器，还要描述它在"做什么"。句式：The instrumentation features [Instrument] playing [Action]...
 </music>`;
 
-            let fullText = "";
-
-            if (this.state.outputMode === "only_notes") {
-                // Only Notes: AI generates ONLY the music creation note
-                fullText = `（以${this.state.charName}的视角写一个音乐创作笔记，只输出笔记，不需要生成任何故事正文）
-严格遵循以下格式及要求输出回复：
-${musicNoteTemplate}
-（注意：只输出music与/music标签内的创作笔记（包含歌名、歌词、风格），不要有其他内容）`;
-            } else if (this.state.outputMode === "filtered") {
-                // Filtered: AI generates story + music note, but we'll filter it later
-                // Add instruction to place music note at the very end for easier extraction
-                fullText = `（根据当前故事及过往回忆，以${this.state.charName}的视角写一个音乐创作笔记，包含歌名、歌词、风格）
+            let fullText = `（根据当前故事及过往回忆，以${this.state.charName}的视角写一个音乐创作笔记，包含歌名、歌词、风格）
 严格遵循以下格式及要求输出回复：
 ${musicNoteTemplate}
 （注意：必须用music与/music标签包裹这部分输出内容，并将其放在回复的最末尾，不要放在正文中。歌名、歌词结构、风格，三个模块连贯输出，中间不要断开）`;
-            } else {
-                // Mixed (default): Original behavior
-                fullText = `（根据当前故事及过往回忆，以${this.state.charName}的视角写一个音乐创作笔记，包含歌名、歌词、风格）
-严格遵循以下格式及要求输出回复：
-${musicNoteTemplate}
-（注意：必须用music与/music标签包裹这部分输出内容，并将其放在回复的最末尾，不要放在正文中。歌名、歌词结构、风格，三个模块连贯输出，中间不要断开）`;
-            }
 
             // 注入到 SillyTavern 输入框
             const textarea = document.getElementById('send_textarea');
@@ -961,6 +1026,344 @@ ${musicNoteTemplate}
                 navigator.clipboard.writeText(fullText).then(() => {
                     if (typeof toastr !== "undefined") toastr.info("未找到输入框，提示词已复制到剪贴板");
                 });
+            }
+        },
+
+        // --- 构建提示词（复用 generateAndInject 的逻辑） ---
+        buildMusicPrompt() {
+            if (!this.state.charName) {
+                if (typeof toastr !== "undefined") toastr.warning("请输入创作者角色名称");
+                else alert("请输入创作者角色名称");
+                return null;
+            }
+            if (!this.state.mainGenre || !this.state.subGenre) {
+                if (typeof toastr !== "undefined") toastr.warning("请选择完整的音乐流派");
+                else alert("请选择完整的音乐流派");
+                return null;
+            }
+            if (this.state.vocalRange === "根据人设推断合适的人声音域" && !this.state.aiGender) {
+                if (typeof toastr !== "undefined") toastr.warning("请选择性别（男/女）以辅助人设推断");
+                else alert("请选择性别（男/女）以辅助人设推断");
+                return null;
+            }
+
+            let finalInstruments = this.state.instrument;
+            let instrumentText = "";
+            if (finalInstruments.length === 0 && this.state.customInstrument) {
+                instrumentText = this.state.customInstrument;
+            } else if (finalInstruments.includes("recommend")) {
+                instrumentText = "推荐合适的乐器";
+            } else if (finalInstruments.length > 0) {
+                instrumentText = finalInstruments.map(i => i.split(' ')[0]).join(' + ');
+            } else {
+                instrumentText = "未指定";
+            }
+
+            const finalVocal = this.state.vocalRange || "AI 推断";
+            const bpm = GENRE_DATA[this.state.mainGenre]?.bpms || "Variable";
+            const mainGenreName = this.state.mainGenre.split(' ')[0];
+            const subGenreName = this.state.subGenre.split(' (')[0];
+
+            let keywordText = "（无）";
+            if (this.state.lyricMode === 'custom' && this.state.lyricKeywords) {
+                keywordText = `（${this.state.lyricKeywords}）`;
+            } else if (this.state.lyricMode === 'plot') {
+                keywordText = "（根据剧情及回忆自动生成）";
+            }
+
+            let langText = "";
+            if (this.state.customLang) {
+                langText = `；语言：${this.state.customLang}`;
+            } else if (this.state.lyricLanguage) {
+                langText = `；语言：${this.state.lyricLanguage}`;
+            }
+
+            let genderChar = "";
+            if (this.state.vocalRange === "根据人设推断合适的人声音域") {
+                genderChar = this.state.aiGender;
+            } else {
+                genderChar = finalVocal.charAt(0);
+            }
+
+            let rhymeText = "";
+            if (this.state.rhymeScheme && this.state.rhymeScheme !== "不押韵") {
+                rhymeText = `；韵脚方案：${this.state.rhymeScheme}`;
+            }
+
+            let timbreText = "";
+            if (this.state.voiceTimbre) {
+                if (this.state.voiceTimbre.includes("Auto")) {
+                    timbreText = " | 音色：根据角色人设推断合理的音色";
+                } else {
+                    timbreText = ` | 音色：${this.state.voiceTimbre}`;
+                }
+            }
+
+            return `以${this.state.charName}的视角写一个音乐创作笔记，只输出笔记内容。
+严格遵循以下格式及要求：
+<music>
+一、歌名
+二、歌词结构：
+[Verse]
+[Pre-Chorus]
+[Chorus]
+[Verse]
+[Chorus]
+[Bridge]
+[Final Chorus]
+要求：
+每段2-4行；副歌一定要重复关键词；不要一整段长句；关键词${keywordText}${langText}${rhymeText}
+三、风格
+1.公式：[${mainGenreName}] + [${subGenreName}] + [${instrumentText}] + [角色的情绪]
+2.BPM (i*/): ${bpm}
+3.人声指定：${genderChar} ${finalVocal}${timbreText}
+${this.state.otherRequirements ? this.state.otherRequirements + '\n' : ''}不仅要列出乐器，还要描述它在"做什么"。句式：The instrumentation features [Instrument] playing [Action]...
+</music>
+（注意：只输出music与/music标签内的创作笔记，不要有其他内容）`;
+        },
+
+        // --- 独立API生成创作笔记 ---
+
+        // 暂存待发送的提示词
+        _pendingPrompt: null,
+
+        /**
+         * 点击羽毛按钮 → 显示预览面板
+         */
+        generateNoteOnly() {
+            if (!window.MusicApiService) {
+                if (typeof toastr !== "undefined") toastr.error("独立API模块未加载，请刷新页面重试");
+                else alert("独立API模块未加载，请刷新页面重试");
+                return;
+            }
+
+            const promptText = this.buildMusicPrompt();
+            if (!promptText) return;
+
+            // 切换到成果页面并展示预览
+            this.toggleView('results');
+            this._pendingPrompt = promptText;
+            this.showPreview(promptText);
+        },
+
+        /**
+         * 显示预览面板，渲染三层内容为可展开条目
+         */
+        showPreview(promptText) {
+            const overlay = document.getElementById('stm-preview-overlay');
+            const listEl = document.getElementById('stm-preview-list');
+            if (!overlay || !listEl) return;
+
+            // 获取三层数据
+            const systemPrompt = window.MusicApiService.getSystemPrompt();
+            const contextCount = window.MusicApiService.getContextCount();
+            const contextMessages = window.MusicApiService.getChatContext(contextCount);
+
+            listEl.innerHTML = '';
+
+            // Section 1: System Prompt
+            this._renderPreviewSection(listEl, {
+                icon: '<i class="fa-solid fa-robot"></i>',
+                title: 'System Prompt',
+                badge: '固定',
+                content: systemPrompt
+            });
+
+            // Section 2: Chat Context
+            if (contextMessages.length > 0) {
+                let contextText = '';
+                contextMessages.forEach((msg, i) => {
+                    const role = msg.role === 'user' ? '👤 User' : '🤖 Assistant';
+                    const preview = msg.content.length > 200 ? msg.content.substring(0, 200) + '...' : msg.content;
+                    contextText += `[${role}]\n${preview}\n\n`;
+                });
+                this._renderPreviewSection(listEl, {
+                    icon: '<i class="fa-solid fa-comments"></i>',
+                    title: `聊天上下文 (${contextMessages.length} 条)`,
+                    badge: '动态',
+                    content: contextText.trim()
+                });
+            } else {
+                this._renderPreviewSection(listEl, {
+                    icon: '<i class="fa-solid fa-comments"></i>',
+                    title: '聊天上下文',
+                    badge: '无',
+                    content: '（未读取到聊天上下文，或上下文数量设为 0）'
+                });
+            }
+
+            // Section 3: 补充信息（可编辑文本框）
+            this._renderPreviewTextarea(listEl, {
+                icon: '<i class="fa-solid fa-book-open"></i>',
+                title: '补充信息（可选）',
+                badge: '可编辑',
+                placeholder: '建议手动从世界书内复制该角色的人设等信息作为创作补充信息'
+            });
+
+            // Section 4: User Prompt (包含所有参数)
+            this._renderPreviewSection(listEl, {
+                icon: '<i class="fa-solid fa-feather-pointed"></i>',
+                title: 'User Prompt（含所有参数）',
+                badge: '动态',
+                content: promptText,
+                defaultOpen: true
+            });
+
+            overlay.style.display = 'flex';
+
+            // 估算 Token 数
+            this._updateTokenCount(systemPrompt, contextMessages, promptText);
+        },
+
+        /**
+         * 估算并显示 Token 数
+         */
+        _updateTokenCount(systemPrompt, contextMessages, promptText) {
+            let totalChars = (systemPrompt || '').length;
+            contextMessages.forEach(msg => { totalChars += (msg.content || '').length; });
+            totalChars += (promptText || '').length;
+            // 粗略估算：中文约 1.5 token/字，英文约 0.25 token/字符，平均约 0.75
+            const estimatedTokens = Math.round(totalChars * 0.75);
+            const tokenEl = document.getElementById('stm-token-count-value');
+            if (tokenEl) tokenEl.textContent = `≈${estimatedTokens}`;
+        },
+
+        /**
+         * 渲染补充信息条目（含可编辑文本框）
+         */
+        _renderPreviewTextarea(container, { icon, title, badge, placeholder }) {
+            const entry = document.createElement('div');
+            entry.className = 'stm-history-entry';
+
+            const header = document.createElement('div');
+            header.className = 'stm-history-entry-header';
+            header.innerHTML = `
+                <span class="stm-history-source">${icon}</span>
+                <span class="stm-history-entry-title">${title}</span>
+                <span class="stm-preview-badge stm-preview-badge-edit">${badge}</span>
+                <i class="fa-solid fa-chevron-down stm-history-chevron"></i>
+            `;
+
+            const detail = document.createElement('div');
+            detail.className = 'stm-history-detail';
+            detail.style.display = 'none';
+            detail.innerHTML = `<textarea class="stm-preview-textarea" id="stm-preview-extra-info" placeholder="${placeholder}"></textarea>`;
+
+            header.onclick = () => {
+                const isOpen = detail.style.display !== 'none';
+                detail.style.display = isOpen ? 'none' : 'block';
+                const chevron = header.querySelector('.stm-history-chevron');
+                if (chevron) {
+                    chevron.classList.toggle('fa-chevron-down', isOpen);
+                    chevron.classList.toggle('fa-chevron-up', !isOpen);
+                }
+                if (!isOpen) {
+                    // 展开时自动聚焦文本框
+                    const textarea = detail.querySelector('textarea');
+                    if (textarea) setTimeout(() => textarea.focus(), 100);
+                }
+            };
+
+            entry.appendChild(header);
+            entry.appendChild(detail);
+            container.appendChild(entry);
+        },
+
+        /**
+         * 渲染预览中的一个可展开条目
+         */
+        _renderPreviewSection(container, { icon, title, badge, content, defaultOpen }) {
+            const entry = document.createElement('div');
+            entry.className = 'stm-history-entry';
+
+            const header = document.createElement('div');
+            header.className = 'stm-history-entry-header';
+            header.innerHTML = `
+                <span class="stm-history-source">${icon}</span>
+                <span class="stm-history-entry-title">${title}</span>
+                <span class="stm-preview-badge">${badge}</span>
+                <i class="fa-solid ${defaultOpen ? 'fa-chevron-up' : 'fa-chevron-down'} stm-history-chevron"></i>
+            `;
+
+            const detail = document.createElement('div');
+            detail.className = 'stm-history-detail';
+            detail.style.display = defaultOpen ? 'block' : 'none';
+            detail.innerHTML = `<div class="stm-preview-content">${this.escapeHtml(content)}</div>`;
+
+            header.onclick = () => {
+                const isOpen = detail.style.display !== 'none';
+                detail.style.display = isOpen ? 'none' : 'block';
+                const chevron = header.querySelector('.stm-history-chevron');
+                if (chevron) {
+                    chevron.classList.toggle('fa-chevron-down', isOpen);
+                    chevron.classList.toggle('fa-chevron-up', !isOpen);
+                }
+            };
+
+            entry.appendChild(header);
+            entry.appendChild(detail);
+            container.appendChild(entry);
+        },
+
+        /**
+         * 隐藏预览面板
+         */
+        hidePreview() {
+            const overlay = document.getElementById('stm-preview-overlay');
+            if (overlay) overlay.style.display = 'none';
+            this._pendingPrompt = null;
+        },
+
+        /**
+         * 确认发送 → 关闭预览，执行 API 调用
+         */
+        async confirmPreview() {
+            let promptText = this._pendingPrompt;
+            if (!promptText) return;
+
+            // 读取补充信息
+            const extraInfoEl = document.getElementById('stm-preview-extra-info');
+            const extraInfo = extraInfoEl ? extraInfoEl.value.trim() : '';
+            if (extraInfo) {
+                promptText = `补充信息（角色人设等背景资料）：\n${extraInfo}\n\n${promptText}`;
+            }
+
+            this.hidePreview();
+
+            const loadingIndicator = document.getElementById("stm-loading-indicator");
+            const genNoteBtn = document.getElementById("stm-btn-generate-note");
+
+            if (loadingIndicator) loadingIndicator.style.display = 'block';
+            if (genNoteBtn) genNoteBtn.disabled = true;
+
+            // 清空旧结果
+            this.capturedNotes = { title: "", lyrics: "", style: "" };
+            this.updateResultsDisplay();
+
+            try {
+                console.info("🎵 [ST Music] 调用独立API生成创作笔记...");
+                const result = await window.MusicApiService.callMusicNoteApi(promptText);
+
+                if (result.success) {
+                    const match = result.content.match(/<music>([\s\S]*?)<\/music>/i);
+                    if (match) {
+                        this.parseCreationNotes(match[1].trim());
+                    } else {
+                        this.parseCreationNotes(result.content.trim());
+                    }
+                    this.updateResultsDisplay();
+                    if (typeof toastr !== "undefined") toastr.success("创作笔记生成成功！");
+                    this.saveNoteToHistory(this.capturedNotes, 'api');
+                } else {
+                    if (typeof toastr !== "undefined") toastr.error("生成失败: " + result.error);
+                    else alert("生成失败: " + result.error);
+                }
+            } catch (error) {
+                console.error("🎵 [ST Music] 独立API调用异常:", error);
+                if (typeof toastr !== "undefined") toastr.error("调用异常: " + error.message);
+            } finally {
+                if (loadingIndicator) loadingIndicator.style.display = 'none';
+                if (genNoteBtn) genNoteBtn.disabled = false;
             }
         },
 
@@ -996,6 +1399,11 @@ ${musicNoteTemplate}
             }
 
             this.updateResultsDisplay();
+
+            // 如果捕捉到了内容，保存到历史记录
+            if (this.capturedNotes.title || this.capturedNotes.lyrics || this.capturedNotes.style) {
+                this.saveNoteToHistory(this.capturedNotes, 'capture');
+            }
         },
 
         parseCreationNotes(content) {
@@ -1028,6 +1436,189 @@ ${musicNoteTemplate}
             if (styleEl) {
                 styleEl.innerHTML = this.capturedNotes.style || placeholder;
             }
+        },
+
+        // --- 历史记录管理 ---
+
+        /**
+         * 保存创作笔记到历史记录
+         * @param {Object} notes - { title, lyrics, style }
+         * @param {string} source - 'api' | 'capture'
+         */
+        saveNoteToHistory(notes, source) {
+            if (!notes.title && !notes.lyrics && !notes.style) return;
+
+            const history = this.loadNoteHistory();
+
+            // 检查是否已存在相同的记录（根据歌名去重）
+            const existingIndex = history.findIndex(h => h.title === notes.title && h.title);
+            if (existingIndex !== -1) {
+                // 更新已有记录的时间戳
+                history[existingIndex].timestamp = Date.now();
+                history[existingIndex].lyrics = notes.lyrics;
+                history[existingIndex].style = notes.style;
+                history[existingIndex].source = source;
+            } else {
+                // 添加新记录
+                history.unshift({
+                    title: notes.title || "未命名",
+                    lyrics: notes.lyrics || "",
+                    style: notes.style || "",
+                    source: source,
+                    timestamp: Date.now()
+                });
+            }
+
+            // 只保留最近 8 条
+            while (history.length > 8) history.pop();
+
+            try {
+                localStorage.setItem('st_music_note_history', JSON.stringify(history));
+            } catch (e) {
+                console.error('[ST Music] 保存历史记录失败:', e);
+            }
+        },
+
+        /**
+         * 加载历史记录
+         * @returns {Array}
+         */
+        loadNoteHistory() {
+            try {
+                const stored = localStorage.getItem('st_music_note_history');
+                return stored ? JSON.parse(stored) : [];
+            } catch (e) {
+                return [];
+            }
+        },
+
+        /**
+         * 切换历史面板显示/隐藏
+         * @param {boolean} show
+         */
+        toggleHistory(show) {
+            const overlay = document.getElementById('stm-history-overlay');
+            if (!overlay) return;
+
+            if (show) {
+                this.renderHistoryList();
+                overlay.style.display = 'block';
+            } else {
+                overlay.style.display = 'none';
+            }
+        },
+
+        /**
+         * 渲染历史记录列表
+         */
+        renderHistoryList() {
+            const listEl = document.getElementById('stm-history-list');
+            if (!listEl) return;
+
+            const history = this.loadNoteHistory();
+
+            if (history.length === 0) {
+                listEl.innerHTML = '<div class="stm-history-empty">暂无历史记录</div>';
+                return;
+            }
+
+            listEl.innerHTML = '';
+            history.forEach((item, index) => {
+                const entry = document.createElement('div');
+                entry.className = 'stm-history-entry';
+
+                const sourceIcon = item.source === 'api'
+                    ? '<i class="fa-solid fa-feather-pointed"></i>'
+                    : '<i class="fa-solid fa-comments"></i>';
+
+                const timeStr = new Date(item.timestamp).toLocaleString('zh-CN', {
+                    month: 'numeric', day: 'numeric',
+                    hour: '2-digit', minute: '2-digit'
+                });
+
+                // 歌名行（可点击展开）
+                const header = document.createElement('div');
+                header.className = 'stm-history-entry-header';
+                header.innerHTML = `
+                    <span class="stm-history-source">${sourceIcon}</span>
+                    <span class="stm-history-entry-title">${this.escapeHtml(item.title)}</span>
+                    <span class="stm-history-time">${timeStr}</span>
+                    <i class="fa-solid fa-chevron-down stm-history-chevron"></i>
+                `;
+
+                // 详情内容（默认隐藏）
+                const detail = document.createElement('div');
+                detail.className = 'stm-history-detail';
+                detail.style.display = 'none';
+                detail.innerHTML = `
+                    <div class="stm-history-detail-section">
+                        <div class="stm-history-detail-label">二、歌词结构</div>
+                        <div class="stm-history-detail-content">${this.escapeHtml(item.lyrics) || '<span class="stm-placeholder">无</span>'}</div>
+                    </div>
+                    <div class="stm-history-detail-section">
+                        <div class="stm-history-detail-label">三、风格</div>
+                        <div class="stm-history-detail-content">${this.escapeHtml(item.style) || '<span class="stm-placeholder">无</span>'}</div>
+                    </div>
+                    <div class="stm-history-detail-actions">
+                        <button class="stm-toggle-btn stm-history-load-btn" data-index="${index}">
+                            <i class="fa-solid fa-arrow-rotate-left"></i> 加载到成果面板
+                        </button>
+                    </div>
+                `;
+
+                // 点击歌名展开/收起
+                header.onclick = () => {
+                    const isOpen = detail.style.display !== 'none';
+                    detail.style.display = isOpen ? 'none' : 'block';
+                    const chevron = header.querySelector('.stm-history-chevron');
+                    if (chevron) {
+                        chevron.classList.toggle('fa-chevron-down', isOpen);
+                        chevron.classList.toggle('fa-chevron-up', !isOpen);
+                    }
+                };
+
+                entry.appendChild(header);
+                entry.appendChild(detail);
+                listEl.appendChild(entry);
+
+                // 绑定"加载到成果面板"按钮
+                const loadBtn = detail.querySelector('.stm-history-load-btn');
+                if (loadBtn) {
+                    loadBtn.onclick = (e) => {
+                        e.stopPropagation();
+                        this.loadHistoryItem(index);
+                    };
+                }
+            });
+        },
+
+        /**
+         * 加载历史记录到成果面板
+         * @param {number} index
+         */
+        loadHistoryItem(index) {
+            const history = this.loadNoteHistory();
+            if (index < 0 || index >= history.length) return;
+
+            const item = history[index];
+            this.capturedNotes = {
+                title: item.title || "",
+                lyrics: item.lyrics || "",
+                style: item.style || ""
+            };
+            this.updateResultsDisplay();
+            this.toggleHistory(false);
+
+            if (typeof toastr !== "undefined") toastr.info(`已加载：${item.title}`);
+        },
+
+        /**
+         * HTML 转义工具
+         */
+        escapeHtml(str) {
+            if (!str) return '';
+            return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;').replace(/'/g, '&#039;').replace(/\n/g, '<br>');
         },
 
         // --- 复制功能 ---

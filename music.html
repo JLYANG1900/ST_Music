@@ -17,6 +17,9 @@
                 <button class="stm-tab-btn" id="stm-tab-results" title="成果页面"><i
                         class="fa-solid fa-file-lines"></i><span class="stm-tab-text">
                         成果</span></button>
+                <button class="stm-tab-btn" id="stm-tab-settings" title="API设置"><i class="fa-solid fa-gear"></i><span
+                        class="stm-tab-text">
+                        设置</span></button>
                 <button class="stm-icon-btn" id="stm-btn-close" title="关闭">✕</button>
             </div>
         </div>
@@ -179,27 +182,23 @@
                             </div>
                         </div>
 
-                        <!-- 06 / Output Mode -->
+                        <!-- 06 / Other Requirements -->
                         <div class="stm-form-group">
-                            <label class="stm-label">06 / Output Mode</label>
-                            <div class="stm-lyric-options">
-                                <label class="stm-radio-label">
-                                    <input type="radio" name="outputMode" value="only_notes">
-                                    <span class="stm-radio-mark"></span>
-                                    <span>只生成创作笔记</span>
-                                </label>
-                                <label class="stm-radio-label">
-                                    <input type="radio" name="outputMode" value="mixed" checked>
-                                    <span class="stm-radio-mark"></span>
-                                    <span>嵌入正文 (默认)</span>
-                                </label>
-                                <label class="stm-radio-label">
-                                    <input type="radio" name="outputMode" value="filtered">
-                                    <span class="stm-radio-mark"></span>
-                                    <span>只保留在插件 (过滤)</span>
-                                </label>
+                            <label class="stm-label">06 / Other Requirements</label>
+                            <div class="stm-other-req-row">
+                                <input type="text" id="stm-other-requirements" class="stm-input"
+                                    placeholder="可填写对于作曲的其他特殊要求，例如指定某种乐器开场。">
+                                <button class="stm-toggle-btn stm-dice-btn" id="stm-btn-dice-req" title="随机填入">
+                                    <i class="fa-solid fa-dice"></i>
+                                </button>
                             </div>
-                            <p class="stm-note">* "只保留在插件" 需手动启用正则脚本：regex-ST_Music_不发送创作笔记</p>
+                        </div>
+
+                        <!-- 07 / Output Mode -->
+                        <div class="stm-form-group">
+                            <label class="stm-label">07 / Output Mode</label>
+                            <span
+                                class="stm-output-mode-text">1.只生成创作笔记：请在插件内配置API，然后点击羽毛按钮进入预览页面。<br>2.嵌入正文：请点击橙色播放键，提示词会进入酒馆的输入框。建议搭配正则脚本：regex-ST_Music_不发送创作笔记，可以使创作笔记不进入正文的上下文、避免浪费token。若希望正文中出现关于创作笔记的剧情，可不开启该正则脚本。</span>
                         </div>
 
                         <!-- 生成按钮区域 -->
@@ -207,6 +206,10 @@
                             <div class="stm-author-info">
                                 插件作者 · JLYANG1900 · https://github.com/JLYANG1900
                             </div>
+                            <button class="stm-create-btn stm-note-only-btn" id="stm-btn-generate-note"
+                                title="独立API：只生成创作笔记">
+                                <i class="fa-solid fa-feather-pointed"></i>
+                            </button>
                             <button class="stm-create-btn" id="stm-btn-generate" title="发送至SillyTavern">
                                 <i class="fa-solid fa-play"></i>
                             </button>
@@ -221,6 +224,14 @@
                         <div class="stm-results-header">
                             <span class="stm-results-icon"><i class="fa-solid fa-pen-to-square"></i></span>
                             <span class="stm-results-title">Creation Notes</span>
+                            <button class="stm-history-btn" id="stm-btn-history" title="历史记录">
+                                <i class="fa-solid fa-clock-rotate-left"></i> 历史
+                            </button>
+                        </div>
+
+                        <!-- 加载状态指示器 -->
+                        <div class="stm-loading-indicator" id="stm-loading-indicator" style="display:none;">
+                            <i class="fa-solid fa-spinner fa-spin"></i> 正在生成创作笔记...
                         </div>
 
                         <!-- 歌名显示 -->
@@ -264,6 +275,46 @@
                             </button>
                         </div>
                     </div>
+
+                    <!-- 历史记录面板（覆盖层，放在 stm-results-container 外面） -->
+                    <div class="stm-history-overlay" id="stm-history-overlay" style="display:none;">
+                        <div class="stm-history-header">
+                            <span class="stm-history-title"><i class="fa-solid fa-clock-rotate-left"></i>
+                                最近8条历史记录</span>
+                            <button class="stm-history-close" id="stm-history-close" title="关闭历史">
+                                <i class="fa-solid fa-xmark"></i>
+                            </button>
+                        </div>
+                        <div class="stm-history-list" id="stm-history-list">
+                            <div class="stm-history-empty">暂无历史记录</div>
+                        </div>
+                    </div>
+
+                    <!-- 预览面板（覆盖层，放在 stm-results-container 外面） -->
+                    <div class="stm-history-overlay stm-preview-overlay" id="stm-preview-overlay" style="display:none;">
+                        <div class="stm-history-header">
+                            <span class="stm-history-title"><i class="fa-solid fa-eye"></i>
+                                发送预览</span>
+                            <div class="stm-preview-actions">
+                                <span class="stm-token-count" id="stm-token-count" title="估算 Token 数"><i
+                                        class="fa-solid fa-coins"></i> <span id="stm-token-count-value">--</span></span>
+                                <button class="stm-toggle-btn stm-preview-confirm-btn" id="stm-preview-confirm"
+                                    title="确认发送">
+                                    <i class="fa-solid fa-paper-plane"></i> 发送
+                                </button>
+                                <button class="stm-history-close" id="stm-preview-close" title="取消">
+                                    <i class="fa-solid fa-xmark"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="stm-history-list" id="stm-preview-list">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 设置页面 (Tab切换显示) -->
+                <div class="stm-page" id="stm-page-settings" style="display:none;">
+                    <!-- JS will populate via MusicSettings.createSettingsPage() -->
                 </div>
 
             </div>

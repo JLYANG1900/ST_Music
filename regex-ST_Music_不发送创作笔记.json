@@ -1,0 +1,17 @@
+{
+    "id": "st-music-filter-creation-notes",
+    "scriptName": "【ST Music】不发送创作笔记到上下文",
+    "findRegex": "/<music>[\\s\\S]*?<\\/music>/gm",
+    "replaceString": "",
+    "trimStrings": [],
+    "placement": [
+        2
+    ],
+    "disabled": false,
+    "markdownOnly": false,
+    "promptOnly": true,
+    "runOnEdit": true,
+    "substituteRegex": 0,
+    "minDepth": null,
+    "maxDepth": null
+}
