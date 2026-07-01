@@ -1412,7 +1412,7 @@
     background: #000;
 }
 
-/* ========== 设置页面样式 ========== */
+/* ========== 独立 API 设置页面 ========== */
 
 .stm-settings-card {
     background: #fff;
@@ -1467,6 +1467,17 @@
     display: flex;
     gap: 8px;
     margin-top: 12px;
+    flex-wrap: wrap;
+}
+
+.stm-settings-model-meta {
+    font-size: 12px;
+    color: var(--stm-text-sub);
+    background: #f7f7f4;
+    border: 1px solid #ece8df;
+    border-radius: 6px;
+    padding: 8px 10px;
+    margin-top: 2px;
 }
 
 .stm-settings-save-btn {
@@ -1780,6 +1791,40 @@
 .stm-preview-badge-edit {
     background: #e8f0fe;
     color: #4285f4;
+}
+
+.stm-preview-depth-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.stm-preview-depth-input {
+    width: 96px;
+    min-width: 96px;
+    height: 34px;
+    padding: 6px 10px;
+    font-size: 12px;
+}
+
+.stm-preview-depth-unit {
+    font-size: 12px;
+    color: var(--stm-text-sub);
+}
+
+.stm-preview-depth-status {
+    margin-top: 8px;
+    min-height: 16px;
+    font-size: 11px;
+    color: var(--stm-text-muted);
+}
+
+.stm-preview-depth-status.is-active {
+    color: var(--stm-accent);
+}
+
+.stm-preview-depth-status.is-warning {
+    color: #b45309;
 }
 
 /* ========== Other Requirements ========== */

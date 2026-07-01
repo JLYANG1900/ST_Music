@@ -17,7 +17,7 @@
                 <button class="stm-tab-btn" id="stm-tab-results" title="成果页面"><i
                         class="fa-solid fa-file-lines"></i><span class="stm-tab-text">
                         成果</span></button>
-                <button class="stm-tab-btn" id="stm-tab-settings" title="API设置"><i class="fa-solid fa-gear"></i><span
+                <button class="stm-tab-btn" id="stm-tab-settings" title="独立API设置"><i class="fa-solid fa-gear"></i><span
                         class="stm-tab-text">
                         设置</span></button>
                 <button class="stm-icon-btn" id="stm-btn-close" title="关闭">✕</button>
@@ -198,7 +198,7 @@
                         <div class="stm-form-group">
                             <label class="stm-label">07 / Output Mode</label>
                             <span
-                                class="stm-output-mode-text">1.只生成创作笔记：请在插件内配置API，然后点击羽毛按钮进入预览页面。<br>2.嵌入正文：请点击橙色播放键，提示词会进入酒馆的输入框。建议搭配正则脚本：regex-ST_Music_不发送创作笔记，可以使创作笔记不进入正文的上下文、避免浪费token。若希望正文中出现关于创作笔记的剧情，可不开启该正则脚本。</span>
+                                class="stm-output-mode-text">1.只生成创作笔记：请先在设置页配置独立 API，然后点击羽毛按钮进入预览页面。<br>2.嵌入正文：请点击橙色播放键，提示词会进入酒馆的输入框。建议搭配正则脚本：regex-ST_Music_不发送创作笔记，可以使创作笔记不进入正文的上下文、避免浪费token。若希望正文中出现关于创作笔记的剧情，可不开启该正则脚本。</span>
                         </div>
 
                         <!-- 生成按钮区域 -->
@@ -207,7 +207,7 @@
                                 插件作者 · JLYANG1900 · https://github.com/JLYANG1900
                             </div>
                             <button class="stm-create-btn stm-note-only-btn" id="stm-btn-generate-note"
-                                title="独立API：只生成创作笔记">
+                                title="独立 API：只生成创作笔记">
                                 <i class="fa-solid fa-feather-pointed"></i>
                             </button>
                             <button class="stm-create-btn" id="stm-btn-generate" title="发送至SillyTavern">
@@ -314,7 +314,7 @@
 
                 <!-- 设置页面 (Tab切换显示) -->
                 <div class="stm-page" id="stm-page-settings" style="display:none;">
-                    <!-- JS will populate via MusicSettings.createSettingsPage() -->
+                    <!-- JS will populate via STMusicApiSettings.createSettingsPage() -->
                 </div>
 
             </div>

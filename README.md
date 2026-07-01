@@ -24,8 +24,9 @@ ST_Music 是一款为 SillyTavern 设计的沉浸式音乐创作与播放插件�
         2.  **网络链接**：支持输入第三方（如 catbox.moe）的 MP3 直链，链接会保存至本地，刷新后依然有效。
 
 *   **🪶 插件内独立 API 功能**
-    *   在插件「设置」页面配置 Gemini 或 OpenAI 兼容 API，无需经过酒馆的 LLM 即可独立生成创作笔记。
-    *   点击羽毛按钮后进入「发送预览」面板，可查看完整的 System Prompt、聊天上下文、User Prompt，并支持填写「补充信息」。
+    *   参考 Abstract 外置手机的配置方式，支持 Primary / Secondary API profile 与 music 视图路由。
+    *   仅支持在 OpenAI、Gemini、Claude、DeepSeek、MiniMax 五个固定大模型供应商中选择，并可切换插件内置模型，不再配置自定义 OpenAI 兼容端点。
+    *   点击羽毛按钮后进入「发送预览」面板，可查看固定 System Prompt、User Prompt，并支持填写「补充信息」。
     *   成果面板支持「历史记录」，自动保存最近 8 条生成结果，可随时回溯加载。
 
 ## 📸 界面预览 (Screenshots)
@@ -78,17 +79,32 @@ ST_Music 是一款为 SillyTavern 设计的沉浸式音乐创作与播放插件�
 
 ## 📝 更新日志 (Changelog)
 
+### 2026-07-01
+- **扩展五供应商模型选择**
+  - OpenAI：gpt-5.5
+  - Gemini：gemini-3.5-flash、Gemini 2.5 Pro、Gemini 2.5 Flash
+  - Claude：Claude Fable 5、Claude Mythos 5、Claude Opus 4.8、Claude Sonnet 5、Claude Sonnet 4.6、Claude Haiku 4.5
+  - DeepSeek：deepseek-v4-flash、deepseek-v4-pro
+  - MiniMax：MiniMax-M3、MiniMax-M2.7
+
+- **重构独立 API 为五供应商多模型选择**
+  - Primary / Secondary profile 的每个 profile 可选择 OpenAI、Gemini、Claude、DeepSeek、MiniMax 之一，并在供应商内选择具体模型
+
+- **独立 API**
+  - 「设置」Tab 中支持 Primary / Secondary API profile 与 music 视图路由
+  - 羽毛按钮改为调用插件内独立 API，不占用 SillyTavern 主 API
+  - 生成输入仅保留固定音乐 System Prompt、User Prompt 与预览里的补充信息
+
 ### 2026-02-20
-- **新增「插件内独立 API」功能**
-  - 新增「设置」Tab：支持配置 Gemini API 或 OpenAI 兼容 API（URL / Key / Model / Temperature / Max Tokens）
-  - 新增 🪶 羽毛按钮：绕过酒馆 LLM，直接调用配置的 API 生成创作笔记
-  - 支持读取酒馆聊天上下文作为创作参考（可配置读取条数）
+- **新增羽毛生成入口**
+  - 新增 🪶 羽毛按钮：可在插件内生成创作笔记
+  - 后续版本已改为使用插件内独立 API profile
 
 - **新增「发送预览」面板**
   - 点击羽毛按钮后，先展示所有将发送给 LLM 的内容预览
-  - 4 个可展开条目：System Prompt、聊天上下文、补充信息（可编辑）、User Prompt（含所有参数）
+  - 可展开查看 System Prompt、补充信息（可编辑）、User Prompt（含所有参数）
   - 预览面板显示 Token 估算数
-  - 确认后才会发送 API 请求
+  - 确认后才会发起生成请求
 
 - **新增「06 / Other Requirements」模块**
   - 可填写对作曲的特殊要求（如指定乐器开场等）
@@ -96,7 +112,7 @@ ST_Music 是一款为 SillyTavern 设计的沉浸式音乐创作与播放插件�
   - 填写内容会自动进入提示词模板
 
 - **新增「历史记录」面板**
-  - 成果面板新增「历史」按钮，保存最近 8 条生成记录（独立 API / 酒馆捕捉均会保存）
+  - 成果面板新增「历史」按钮，保存最近 8 条生成记录（插件生成 / 酒馆捕捉均会保存）
   - 支持展开查看完整歌词与风格，可一键加载到成果面板
 
 - **Output Mode 简化**

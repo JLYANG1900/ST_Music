@@ -12,31 +12,55 @@ console.log("🎵 [ST Music] 脚本文件已加载 (Client Mode)");
     const extensionName = "st-music-creator";
     const extensionPath = `scripts/extensions/third-party/ST_Music`;
 
-    // --- 加载独立API模块 ---
-    function loadExternalScripts() {
-        return new Promise((resolve, reject) => {
-            const scripts = [
-                `${extensionPath}/musicApiService.js`,
-                `${extensionPath}/musicSettings.js`,
-            ];
-            let loaded = 0;
-            scripts.forEach((src) => {
-                const script = document.createElement("script");
-                script.src = src;
-                script.onload = () => {
-                    loaded++;
-                    if (loaded === scripts.length) {
-                        console.log("🎵 [ST Music] 独立API模块加载完成");
-                        resolve();
-                    }
-                };
-                script.onerror = () => {
-                    console.error("🎵 [ST Music] 加载失败:", src);
-                    reject(new Error(`Failed to load ${src}`));
-                };
-                document.head.appendChild(script);
-            });
+    // --- ST Music runtime add-ons ---
+    const ST_MUSIC_RUNTIME_SCRIPTS = Object.freeze([
+        {
+            id: "st-music-api-runtime",
+            file: "ApiService.js",
+            isReady: () =>
+                Boolean(window.STMusicApi || window.MusicApiService)
+                && Boolean(window.STMusicApiSettings || window.MusicSettings),
+        },
+    ]);
+
+    const runtimeScriptPromises = new Map();
+
+    function attachRuntimeScript(scriptDef) {
+        if (scriptDef.isReady()) return Promise.resolve(scriptDef.id);
+
+        const src = `${extensionPath}/${scriptDef.file}`;
+        if (runtimeScriptPromises.has(src)) return runtimeScriptPromises.get(src);
+
+        const promise = new Promise((resolve, reject) => {
+            const script = document.createElement("script");
+            script.src = src;
+            script.async = false;
+            script.dataset.stMusicRuntimeScript = scriptDef.id;
+            script.onload = () => {
+                if (scriptDef.isReady()) {
+                    resolve(scriptDef.id);
+                    return;
+                }
+                reject(new Error(`Loaded ${scriptDef.file}, but the expected runtime hook was not registered`));
+            };
+            script.onerror = () => reject(new Error(`Failed to load ${scriptDef.file}`));
+            document.head.appendChild(script);
         });
+
+        const trackedPromise = promise.catch((error) => {
+            runtimeScriptPromises.delete(src);
+            throw error;
+        });
+
+        runtimeScriptPromises.set(src, trackedPromise);
+        return trackedPromise;
+    }
+
+    async function loadStMusicRuntimeScripts() {
+        for (const scriptDef of ST_MUSIC_RUNTIME_SCRIPTS) {
+            await attachRuntimeScript(scriptDef);
+        }
+        console.log("🎵 [ST Music] 独立 API 模块加载完成");
     }
 
     // --- 数据常量 ---
@@ -272,12 +296,12 @@ console.log("🎵 [ST Music] 脚本文件已加载 (Client Mode)");
             this.injectToggleButton();
             await this.loadHTML();
             if (this.panelLoaded) {
-                // 加载独立API模块
+                // 加载独立 API 模块
                 try {
-                    await loadExternalScripts();
+                    await loadStMusicRuntimeScripts();
                     this.initSettingsPage();
                 } catch (e) {
-                    console.warn("🎵 [ST Music] 独立API模块加载失败，设置功能不可用:", e);
+                    console.warn("🎵 [ST Music] 独立 API 模块加载失败，生成与设置功能可能不可用:", e);
                 }
                 this.bindEvents();
                 this.renderVocalButtons();
@@ -292,12 +316,14 @@ console.log("🎵 [ST Music] 脚本文件已加载 (Client Mode)");
 
         // 初始化设置页面
         initSettingsPage() {
-            if (!window.MusicSettings) return;
+            const settingsView = window.STMusicApiSettings || window.MusicSettings;
+            if (!settingsView) return;
             const settingsPage = document.getElementById("stm-page-settings");
             if (settingsPage) {
-                const content = window.MusicSettings.createSettingsPage();
+                settingsPage.innerHTML = "";
+                const content = settingsView.createSettingsPage();
                 settingsPage.appendChild(content);
-                window.MusicSettings.bindSettingsEvents();
+                settingsView.bindSettingsEvents();
             }
         },
 
@@ -546,7 +572,7 @@ console.log("🎵 [ST Music] 脚本文件已加载 (Client Mode)");
             const genBtn = document.getElementById("stm-btn-generate");
             if (genBtn) genBtn.onclick = () => this.generateAndInject();
 
-            // 独立API生成按钮
+            // 独立 API 生成按钮
             const genNoteBtn = document.getElementById("stm-btn-generate-note");
             if (genNoteBtn) genNoteBtn.onclick = () => this.generateNoteOnly();
 
@@ -1068,7 +1094,7 @@ ${musicNoteTemplate}
             if (this.state.lyricMode === 'custom' && this.state.lyricKeywords) {
                 keywordText = `（${this.state.lyricKeywords}）`;
             } else if (this.state.lyricMode === 'plot') {
-                keywordText = "（根据剧情及回忆自动生成）";
+                keywordText = "（根据补充信息、角色设定与创作者视角自动生成）";
             }
 
             let langText = "";
@@ -1122,7 +1148,7 @@ ${this.state.otherRequirements ? this.state.otherRequirements + '\n' : ''}不仅
 （注意：只输出music与/music标签内的创作笔记，不要有其他内容）`;
         },
 
-        // --- 独立API生成创作笔记 ---
+        // --- 使用独立 API 生成创作笔记 ---
 
         // 暂存待发送的提示词
         _pendingPrompt: null,
@@ -1131,9 +1157,10 @@ ${this.state.otherRequirements ? this.state.otherRequirements + '\n' : ''}不仅
          * 点击羽毛按钮 → 显示预览面板
          */
         generateNoteOnly() {
-            if (!window.MusicApiService) {
-                if (typeof toastr !== "undefined") toastr.error("独立API模块未加载，请刷新页面重试");
-                else alert("独立API模块未加载，请刷新页面重试");
+            const api = window.STMusicApi || window.MusicApiService;
+            if (!api) {
+                if (typeof toastr !== "undefined") toastr.error("独立 API 模块未加载，请刷新页面重试");
+                else alert("独立 API 模块未加载，请刷新页面重试");
                 return;
             }
 
@@ -1147,21 +1174,18 @@ ${this.state.otherRequirements ? this.state.otherRequirements + '\n' : ''}不仅
         },
 
         /**
-         * 显示预览面板，渲染三层内容为可展开条目
+         * 显示预览面板，渲染固定系统提示词、补充信息和用户参数提示词
          */
         showPreview(promptText) {
             const overlay = document.getElementById('stm-preview-overlay');
             const listEl = document.getElementById('stm-preview-list');
             if (!overlay || !listEl) return;
 
-            // 获取三层数据
-            const systemPrompt = window.MusicApiService.getSystemPrompt();
-            const contextCount = window.MusicApiService.getContextCount();
-            const contextMessages = window.MusicApiService.getChatContext(contextCount);
+            const api = window.STMusicApi || window.MusicApiService;
+            const systemPrompt = api.getSystemPrompt();
 
             listEl.innerHTML = '';
 
-            // Section 1: System Prompt
             this._renderPreviewSection(listEl, {
                 icon: '<i class="fa-solid fa-robot"></i>',
                 title: 'System Prompt',
@@ -1169,30 +1193,6 @@ ${this.state.otherRequirements ? this.state.otherRequirements + '\n' : ''}不仅
                 content: systemPrompt
             });
 
-            // Section 2: Chat Context
-            if (contextMessages.length > 0) {
-                let contextText = '';
-                contextMessages.forEach((msg, i) => {
-                    const role = msg.role === 'user' ? '👤 User' : '🤖 Assistant';
-                    const preview = msg.content.length > 200 ? msg.content.substring(0, 200) + '...' : msg.content;
-                    contextText += `[${role}]\n${preview}\n\n`;
-                });
-                this._renderPreviewSection(listEl, {
-                    icon: '<i class="fa-solid fa-comments"></i>',
-                    title: `聊天上下文 (${contextMessages.length} 条)`,
-                    badge: '动态',
-                    content: contextText.trim()
-                });
-            } else {
-                this._renderPreviewSection(listEl, {
-                    icon: '<i class="fa-solid fa-comments"></i>',
-                    title: '聊天上下文',
-                    badge: '无',
-                    content: '（未读取到聊天上下文，或上下文数量设为 0）'
-                });
-            }
-
-            // Section 3: 补充信息（可编辑文本框）
             this._renderPreviewTextarea(listEl, {
                 icon: '<i class="fa-solid fa-book-open"></i>',
                 title: '补充信息（可选）',
@@ -1200,7 +1200,12 @@ ${this.state.otherRequirements ? this.state.otherRequirements + '\n' : ''}不仅
                 placeholder: '建议手动从世界书内复制该角色的人设等信息作为创作补充信息'
             });
 
-            // Section 4: User Prompt (包含所有参数)
+            this._renderPreviewMemoryDepth(listEl, {
+                icon: '<i class="fa-solid fa-layer-group"></i>',
+                title: '读取记忆楼层深度',
+                badge: '自填空'
+            });
+
             this._renderPreviewSection(listEl, {
                 icon: '<i class="fa-solid fa-feather-pointed"></i>',
                 title: 'User Prompt（含所有参数）',
@@ -1211,21 +1216,32 @@ ${this.state.otherRequirements ? this.state.otherRequirements + '\n' : ''}不仅
 
             overlay.style.display = 'flex';
 
-            // 估算 Token 数
-            this._updateTokenCount(systemPrompt, contextMessages, promptText);
+            this._bindPreviewDraftInputs(systemPrompt, promptText);
+            this._updatePreviewTokenCount(systemPrompt, promptText);
         },
 
         /**
          * 估算并显示 Token 数
          */
-        _updateTokenCount(systemPrompt, contextMessages, promptText) {
-            let totalChars = (systemPrompt || '').length;
-            contextMessages.forEach(msg => { totalChars += (msg.content || '').length; });
-            totalChars += (promptText || '').length;
+        _updateTokenCount(...texts) {
+            const totalChars = texts.reduce((sum, text) => sum + (text || '').length, 0);
             // 粗略估算：中文约 1.5 token/字，英文约 0.25 token/字符，平均约 0.75
             const estimatedTokens = Math.round(totalChars * 0.75);
             const tokenEl = document.getElementById('stm-token-count-value');
             if (tokenEl) tokenEl.textContent = `≈${estimatedTokens}`;
+        },
+
+        _bindPreviewDraftInputs(systemPrompt, promptText) {
+            const update = () => this._updatePreviewTokenCount(systemPrompt, promptText);
+            document.getElementById('stm-preview-extra-info')?.addEventListener('input', update);
+            document.getElementById('stm-preview-memory-depth')?.addEventListener('input', update);
+        },
+
+        _updatePreviewTokenCount(systemPrompt, promptText) {
+            const extraInfo = this._readPreviewExtraInfo();
+            const memoryLayers = this._readPreviewMemoryLayers();
+            this._updateMemoryDepthStatus(memoryLayers);
+            this._updateTokenCount(systemPrompt, extraInfo, memoryLayers.text, promptText);
         },
 
         /**
@@ -1267,6 +1283,139 @@ ${this.state.otherRequirements ? this.state.otherRequirements + '\n' : ''}不仅
             entry.appendChild(header);
             entry.appendChild(detail);
             container.appendChild(entry);
+        },
+
+        _renderPreviewMemoryDepth(container, { icon, title, badge }) {
+            const entry = document.createElement('div');
+            entry.className = 'stm-history-entry';
+
+            const header = document.createElement('div');
+            header.className = 'stm-history-entry-header';
+            header.innerHTML = `
+                <span class="stm-history-source">${icon}</span>
+                <span class="stm-history-entry-title">${title}</span>
+                <span class="stm-preview-badge stm-preview-badge-edit">${badge}</span>
+                <i class="fa-solid fa-chevron-down stm-history-chevron"></i>
+            `;
+
+            const detail = document.createElement('div');
+            detail.className = 'stm-history-detail';
+            detail.style.display = 'none';
+            detail.innerHTML = `
+                <div class="stm-preview-depth-row">
+                    <input class="stm-input stm-preview-depth-input" id="stm-preview-memory-depth" type="number" min="0" step="1" inputmode="numeric" placeholder="0">
+                    <span class="stm-preview-depth-unit">层</span>
+                </div>
+                <div class="stm-preview-depth-status" id="stm-preview-memory-depth-status"></div>
+            `;
+
+            header.onclick = () => {
+                const isOpen = detail.style.display !== 'none';
+                detail.style.display = isOpen ? 'none' : 'block';
+                const chevron = header.querySelector('.stm-history-chevron');
+                if (chevron) {
+                    chevron.classList.toggle('fa-chevron-down', isOpen);
+                    chevron.classList.toggle('fa-chevron-up', !isOpen);
+                }
+                if (!isOpen) {
+                    const input = detail.querySelector('input');
+                    if (input) setTimeout(() => input.focus(), 100);
+                }
+            };
+
+            entry.appendChild(header);
+            entry.appendChild(detail);
+            container.appendChild(entry);
+        },
+
+        _readPreviewExtraInfo() {
+            const extraInfoEl = document.getElementById('stm-preview-extra-info');
+            return extraInfoEl ? extraInfoEl.value.trim() : '';
+        },
+
+        _readPreviewMemoryDepth() {
+            const depthEl = document.getElementById('stm-preview-memory-depth');
+            const depth = Number.parseInt(depthEl?.value, 10);
+            return Number.isFinite(depth) && depth > 0 ? depth : 0;
+        },
+
+        _readPreviewMemoryLayers() {
+            const depth = this._readPreviewMemoryDepth();
+            return this._readRecentChatLayers(depth);
+        },
+
+        _getSillyTavernChatContext() {
+            let context = null;
+
+            try {
+                if (typeof window.SillyTavern !== 'undefined' && typeof window.SillyTavern.getContext === 'function') {
+                    context = window.SillyTavern.getContext();
+                } else if (
+                    typeof window.parent !== 'undefined'
+                    && window.parent.SillyTavern
+                    && typeof window.parent.SillyTavern.getContext === 'function'
+                ) {
+                    context = window.parent.SillyTavern.getContext();
+                }
+            } catch (e) {
+                console.log("[ST Music] 无法访问 SillyTavern 上下文");
+            }
+
+            return Array.isArray(context?.chat) ? context.chat : [];
+        },
+
+        _cleanChatLayerText(text) {
+            return `${text || ''}`
+                .replace(/<thinking>[\s\S]*?<\/thinking>/gi, '')
+                .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
+                .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
+                .replace(/<disclaimer>[\s\S]*?<\/disclaimer>/gi, '')
+                .replace(/<finish>[\s\S]*?<\/finish>/gi, '')
+                .trim();
+        },
+
+        _formatChatLayer(layer) {
+            const speaker = layer.msg?.name || (layer.msg?.is_user ? '用户' : '角色');
+            return `#${layer.index + 1} ${speaker}\n${layer.text}`;
+        },
+
+        _readRecentChatLayers(depth) {
+            if (!depth) return { depth: 0, count: 0, text: '' };
+
+            const layers = this._getSillyTavernChatContext()
+                .map((msg, index) => ({
+                    msg,
+                    index,
+                    text: this._cleanChatLayerText(msg?.mes || msg?.message || msg?.content || '')
+                }))
+                .filter((layer) => layer.text);
+
+            const selected = layers.slice(Math.max(0, layers.length - depth));
+            return {
+                depth,
+                count: selected.length,
+                text: selected.map((layer) => this._formatChatLayer(layer)).join('\n\n')
+            };
+        },
+
+        _updateMemoryDepthStatus(memoryLayers) {
+            const statusEl = document.getElementById('stm-preview-memory-depth-status');
+            if (!statusEl) return;
+
+            statusEl.classList.remove('is-active', 'is-warning');
+            if (!memoryLayers.depth) {
+                statusEl.textContent = '未读取正文楼层';
+                return;
+            }
+
+            if (!memoryLayers.count) {
+                statusEl.textContent = '未读取到 SillyTavern 正文';
+                statusEl.classList.add('is-warning');
+                return;
+            }
+
+            statusEl.textContent = `将读取最近 ${memoryLayers.count}/${memoryLayers.depth} 层正文`;
+            statusEl.classList.add('is-active');
         },
 
         /**
@@ -1315,18 +1464,27 @@ ${this.state.otherRequirements ? this.state.otherRequirements + '\n' : ''}不仅
         },
 
         /**
-         * 确认发送 → 关闭预览，执行 API 调用
+         * 确认发送 → 关闭预览，执行独立 API 生成
          */
         async confirmPreview() {
             let promptText = this._pendingPrompt;
             if (!promptText) return;
 
             // 读取补充信息
-            const extraInfoEl = document.getElementById('stm-preview-extra-info');
-            const extraInfo = extraInfoEl ? extraInfoEl.value.trim() : '';
+            const extraInfo = this._readPreviewExtraInfo();
+            const memoryLayers = this._readPreviewMemoryLayers();
+            const promptParts = [];
+
             if (extraInfo) {
-                promptText = `补充信息（角色人设等背景资料）：\n${extraInfo}\n\n${promptText}`;
+                promptParts.push(`补充信息（角色人设等背景资料）：\n${extraInfo}`);
             }
+            if (memoryLayers.text) {
+                promptParts.push(`最近 ${memoryLayers.count} 层 SillyTavern 正文（按时间顺序）：\n${memoryLayers.text}`);
+            } else if (memoryLayers.depth > 0 && typeof toastr !== "undefined") {
+                toastr.warning("未读取到 SillyTavern 正文楼层，将继续发送当前提示词");
+            }
+            promptParts.push(promptText);
+            promptText = promptParts.join('\n\n');
 
             this.hidePreview();
 
@@ -1341,8 +1499,9 @@ ${this.state.otherRequirements ? this.state.otherRequirements + '\n' : ''}不仅
             this.updateResultsDisplay();
 
             try {
-                console.info("🎵 [ST Music] 调用独立API生成创作笔记...");
-                const result = await window.MusicApiService.callMusicNoteApi(promptText);
+                console.info("🎵 [ST Music] 调用独立 API 生成创作笔记...");
+                const api = window.STMusicApi || window.MusicApiService;
+                const result = await api.callMusicNoteApi(promptText);
 
                 if (result.success) {
                     const match = result.content.match(/<music>([\s\S]*?)<\/music>/i);
@@ -1353,13 +1512,13 @@ ${this.state.otherRequirements ? this.state.otherRequirements + '\n' : ''}不仅
                     }
                     this.updateResultsDisplay();
                     if (typeof toastr !== "undefined") toastr.success("创作笔记生成成功！");
-                    this.saveNoteToHistory(this.capturedNotes, 'api');
+                    this.saveNoteToHistory(this.capturedNotes, 'generate');
                 } else {
                     if (typeof toastr !== "undefined") toastr.error("生成失败: " + result.error);
                     else alert("生成失败: " + result.error);
                 }
             } catch (error) {
-                console.error("🎵 [ST Music] 独立API调用异常:", error);
+                console.error("🎵 [ST Music] 独立 API 调用异常:", error);
                 if (typeof toastr !== "undefined") toastr.error("调用异常: " + error.message);
             } finally {
                 if (loadingIndicator) loadingIndicator.style.display = 'none';
@@ -1443,7 +1602,7 @@ ${this.state.otherRequirements ? this.state.otherRequirements + '\n' : ''}不仅
         /**
          * 保存创作笔记到历史记录
          * @param {Object} notes - { title, lyrics, style }
-         * @param {string} source - 'api' | 'capture'
+         * @param {string} source - 'generate' | 'capture'
          */
         saveNoteToHistory(notes, source) {
             if (!notes.title && !notes.lyrics && !notes.style) return;
@@ -1527,7 +1686,7 @@ ${this.state.otherRequirements ? this.state.otherRequirements + '\n' : ''}不仅
                 const entry = document.createElement('div');
                 entry.className = 'stm-history-entry';
 
-                const sourceIcon = item.source === 'api'
+                const sourceIcon = item.source === 'api' || item.source === 'generate'
                     ? '<i class="fa-solid fa-feather-pointed"></i>'
                     : '<i class="fa-solid fa-comments"></i>';
 
