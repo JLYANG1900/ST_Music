@@ -15,8 +15,32 @@
     --stm-border: #dcdcdc;
     --stm-shadow: rgba(0, 0, 0, 0.05);
     --stm-shadow-lg: rgba(0, 0, 0, 0.15);
+    --stm-viewport-width: 100vw;
+    --stm-viewport-height: 100vh;
+    --stm-viewport-top: 0px;
+    --stm-viewport-left: 0px;
+    --stm-safe-top: env(safe-area-inset-top, 0px);
+    --stm-safe-right: env(safe-area-inset-right, 0px);
+    --stm-safe-bottom: env(safe-area-inset-bottom, 0px);
+    --stm-safe-left: env(safe-area-inset-left, 0px);
+    --stm-available-height: calc(var(--stm-viewport-height) - 16px - var(--stm-safe-top) - var(--stm-safe-bottom));
 
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+@supports (height: 100dvh) {
+    #st-music-root {
+        --stm-viewport-height: 100dvh;
+    }
+}
+
+/* Keep host page sizing rules from changing the panel's measured dimensions. */
+#st-music-root,
+#st-music-root *,
+#st-music-root *::before,
+#st-music-root *::after,
+#st-music-toggle-btn {
+    box-sizing: border-box;
 }
 
 /* 强制移除所有文字阴影 (覆盖 SillyTavern 全局样式) */
@@ -29,16 +53,25 @@
 
 /* 切换按钮 (悬浮在页面上) */
 #st-music-toggle-btn {
+    --stm-safe-top: env(safe-area-inset-top, 0px);
+    --stm-safe-right: env(safe-area-inset-right, 0px);
+    --stm-safe-bottom: env(safe-area-inset-bottom, 0px);
+    --stm-safe-left: env(safe-area-inset-left, 0px);
     position: fixed;
     z-index: 2147483647;
-    width: 40px;
-    height: 40px;
+    width: 44px;
+    height: 44px;
     display: flex;
     align-items: center;
     justify-content: center;
-    cursor: pointer;
-    transition: transform 0.2s, box-shadow 0.2s, opacity 0.2s;
+    cursor: grab;
+    transition: box-shadow 0.2s, opacity 0.2s;
+    padding: 0;
+    margin: 0;
     user-select: none;
+    -webkit-user-select: none;
+    -webkit-touch-callout: none;
+    touch-action: none;
     background: var(--stm-surface, #F4F4F0);
     border-radius: 50%;
     border: 2px solid var(--stm-accent, #FF4400);
@@ -47,21 +80,27 @@
     opacity: 0.5;
 }
 
-#st-music-toggle-btn:hover {
-    transform: scale(1.1);
+#st-music-toggle-btn:hover,
+#st-music-toggle-btn:focus-visible {
+    opacity: 1;
+}
+
+#st-music-toggle-btn.stm-dragging {
+    cursor: grabbing;
     opacity: 1;
 }
 
 /* 主面板 */
 #st-music-panel {
     position: fixed;
-    top: 50%;
-    left: 50%;
+    top: calc(var(--stm-viewport-top) + var(--stm-viewport-height) / 2);
+    left: calc(var(--stm-viewport-left) + var(--stm-viewport-width) / 2);
     transform: translate(-50%, -50%);
     width: 90vw;
     max-width: 1000px;
     height: 85vh;
-    max-height: 700px;
+    max-height: min(700px, var(--stm-available-height));
+    min-height: 0;
     background-color: var(--stm-surface);
     border-radius: 2rem;
     box-shadow:
@@ -86,7 +125,16 @@
     width: 340px;
     max-width: 340px;
     height: auto;
-    max-height: 500px;
+    max-height: min(500px, var(--stm-available-height));
+}
+
+#st-music-panel.stm-compact .stm-body {
+    overflow-y: auto;
+    overscroll-behavior: contain;
+}
+
+#st-music-panel.stm-compact .stm-player-section {
+    flex-shrink: 0;
 }
 
 /* 标题栏 */
@@ -100,6 +148,7 @@
     flex-shrink: 0;
     user-select: none;
     cursor: move;
+    touch-action: none;
 }
 
 .stm-logo-title {
@@ -198,6 +247,7 @@
     display: flex;
     overflow: hidden;
     min-height: 0;
+    min-width: 0;
 }
 
 /* 左侧播放器区域 */
@@ -210,6 +260,7 @@
     display: flex;
     flex-direction: column;
     gap: 16px;
+    min-width: 0;
 }
 
 /* 紧凑模式下播放器区域 */
@@ -235,6 +286,7 @@
     background-image: radial-gradient(var(--stm-mesh-dot) 1.5px, transparent 1.5px);
     background-size: 6px 6px;
     background-color: #efefeb;
+    min-width: 0;
 }
 
 .stm-playlist-overlay {
@@ -244,6 +296,7 @@
     backdrop-filter: blur(1px);
     padding: 12px;
     overflow-y: auto;
+    overscroll-behavior: contain;
 }
 
 .stm-playlist-empty {
@@ -450,6 +503,8 @@
     overflow: hidden;
     display: flex;
     flex-direction: column;
+    min-width: 0;
+    min-height: 0;
 }
 
 .stm-page {
@@ -458,12 +513,17 @@
     display: flex;
     flex-direction: column;
     position: relative;
+    min-width: 0;
+    min-height: 0;
 }
 
 .stm-form-scroll {
     flex: 1;
     overflow-y: auto;
     padding: 24px 32px;
+    min-height: 0;
+    min-width: 0;
+    overscroll-behavior: contain;
 }
 
 /* 滚动条样式 */
@@ -554,6 +614,11 @@
 .stm-btn-grid {
     display: grid;
     gap: 8px;
+    min-width: 0;
+}
+
+.stm-btn-grid > * {
+    min-width: 0;
 }
 
 .stm-vocal-grid {
@@ -586,6 +651,8 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
+    overflow-wrap: anywhere;
+    min-width: 0;
 }
 
 .stm-toggle-btn:hover {
@@ -1135,6 +1202,7 @@
     color: var(--stm-text-dark);
     white-space: pre-wrap;
     font-family: 'JetBrains Mono', monospace;
+    overflow-wrap: anywhere;
 }
 
 .stm-lyrics-content {
@@ -1199,78 +1267,30 @@
     }
 }
 
-/* 移动端适配 */
-@media (max-width: 768px) {
-    #st-music-toggle-btn {
-        top: 10px !important;
-        left: 50% !important;
-        transform: translateX(-50%) !important;
-        right: auto !important;
-        bottom: auto !important;
-    }
+/* 紧凑播放器也使用独立的导航行，避免桌面 340px 面板挤掉关闭按钮。 */
+.stm-compact .stm-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+    padding: 12px;
+}
 
-    /* 顶部安全距离布局 - 避免底部被遮挡，同时也防止顶部溢出 */
-    #st-music-panel {
-        position: fixed !important;
-        top: 15vh !important;
-        bottom: auto !important;
-        left: 50% !important;
-        right: auto !important;
-        transform: translateX(-50%) !important;
-        width: 95vw !important;
-        height: auto !important;
-        max-width: none !important;
-        max-height: 80vh !important;
-        border-radius: 1rem;
-        padding-bottom: 0;
-    }
+.stm-compact .stm-header-controls {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr)) 44px;
+    gap: 4px;
+    width: 100%;
+}
 
-    #st-music-panel.stm-compact {
-        top: 15vh !important;
-        bottom: auto !important;
-        left: 50% !important;
-        right: auto !important;
-        transform: translateX(-50%) !important;
-        width: 90vw !important;
-        height: auto !important;
-        max-height: 60vh !important;
-        border-radius: 1rem;
-        padding-bottom: 0;
-    }
+.stm-compact .stm-header-controls button {
+    min-width: 0;
+    min-height: 44px;
+    padding: 6px;
+}
 
-    .stm-body {
-        flex-direction: column;
-    }
-
-    .stm-player-section {
-        width: 100%;
-        height: 200px;
-        flex-shrink: 0;
-        border-right: none;
-        border-bottom: 1px solid var(--stm-border);
-        flex-direction: row;
-    }
-
-    .stm-playlist-area {
-        flex: 1;
-    }
-
-    .stm-player-controls {
-        flex-direction: column;
-        padding: 0 12px;
-    }
-
-    .stm-vocal-grid {
-        grid-template-columns: repeat(2, 1fr);
-    }
-
-    .stm-genre-grid {
-        grid-template-columns: repeat(2, 1fr);
-    }
-
-    .stm-form-scroll {
-        padding: 16px;
-    }
+.stm-compact .stm-header-controls .stm-icon-btn {
+    width: 44px;
+    height: 44px;
 }
 
 /* 紧凑模式：标签按钮仅显示图标 */
@@ -1282,23 +1302,31 @@
 /* --- Dieter Rams Style Modal --- */
 .stm-modal-overlay {
     position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
+    top: var(--stm-viewport-top);
+    left: var(--stm-viewport-left);
+    width: var(--stm-viewport-width);
+    height: var(--stm-viewport-height);
+    padding: calc(8px + var(--stm-safe-top)) calc(8px + var(--stm-safe-right)) calc(8px + var(--stm-safe-bottom)) calc(8px + var(--stm-safe-left));
     background: rgba(0, 0, 0, 0.4);
     backdrop-filter: blur(2px);
     display: none;
     /* Hidden by default */
     justify-content: center;
     align-items: center;
-    z-index: 10000;
+    z-index: 2147483647;
+    overflow-y: auto;
+    overscroll-behavior: contain;
 }
 
 .stm-modal-content {
     background: #f4f4f4;
     /* Minimalist Light Gray */
     width: 320px;
+    max-width: 100%;
+    max-height: 100%;
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
     border-radius: 12px;
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
     font-family: 'Helvetica Neue', Arial, sans-serif;
@@ -1321,6 +1349,7 @@
 
 .stm-modal-header {
     padding: 20px 24px 10px;
+    flex-shrink: 0;
 }
 
 .stm-modal-header h3 {
@@ -1334,6 +1363,9 @@
 
 .stm-modal-body {
     padding: 10px 24px 20px;
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
 }
 
 .stm-form-group {
@@ -1371,6 +1403,7 @@
 
 .stm-modal-footer {
     display: flex;
+    flex-shrink: 0;
     justify-content: flex-end;
     gap: 12px;
     padding: 16px 24px;
@@ -1461,6 +1494,7 @@
 
 .stm-settings-half {
     flex: 1;
+    min-width: 0;
 }
 
 .stm-settings-btn-row {
@@ -1478,6 +1512,7 @@
     border-radius: 6px;
     padding: 8px 10px;
     margin-top: 2px;
+    overflow-wrap: anywhere;
 }
 
 .stm-settings-save-btn {
@@ -1494,6 +1529,7 @@
     font-size: 12px;
     color: var(--stm-text-sub);
     line-height: 1.8;
+    overflow-wrap: anywhere;
 }
 
 .stm-settings-info p {
@@ -1892,4 +1928,392 @@
     background: #f5f5f3;
     border-radius: 4px;
     flex-shrink: 0;
+}
+
+/* 触屏不能依赖悬停来发现删除操作。 */
+@media (hover: none), (pointer: coarse) {
+    .stm-track-delete {
+        opacity: 1;
+        min-width: 44px;
+        min-height: 44px;
+    }
+
+    #st-music-root input,
+    #st-music-root textarea,
+    #st-music-root select {
+        font-size: 16px !important;
+    }
+
+    .stm-icon-btn,
+    .stm-history-close,
+    .stm-dice-btn,
+    .stm-ctrl-btn,
+    .stm-playback-group .stm-ctrl-btn,
+    .stm-play-btn {
+        width: 44px !important;
+        height: 44px !important;
+        flex-shrink: 0;
+    }
+
+    .stm-tab-btn,
+    .stm-toggle-btn,
+    .stm-copy-btn,
+    .stm-history-btn,
+    .stm-refresh-btn,
+    .stm-gender-btn,
+    .stm-instrument-btn,
+    .stm-btn-primary,
+    .stm-btn-secondary,
+    .stm-radio-label {
+        min-height: 44px;
+    }
+
+    /* 横屏仍采用宽屏布局，但按钮保持触控尺寸，侧栏允许滚动。 */
+    .stm-player-controls {
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
+    .stm-playback-group {
+        gap: 4px;
+        padding: 8px;
+    }
+
+    .stm-player-section {
+        min-height: 0;
+        overflow-y: auto;
+        overscroll-behavior: contain;
+    }
+
+    .stm-playlist-area {
+        min-height: 120px;
+    }
+}
+
+/* 与 JS 共用 768px 断点；visualViewport 变量也覆盖软键盘和浏览器工具栏变化。 */
+@media (max-width: 768px) {
+    #st-music-panel,
+    #st-music-panel.stm-compact {
+        top: calc(var(--stm-viewport-top) + var(--stm-safe-top) + 8px);
+        left: calc(var(--stm-viewport-left) + var(--stm-safe-left) + 8px);
+        right: auto;
+        bottom: auto;
+        transform: none;
+        width: calc(var(--stm-viewport-width) - 16px - var(--stm-safe-left) - var(--stm-safe-right));
+        max-width: none;
+        height: var(--stm-available-height);
+        max-height: var(--stm-available-height);
+        border-radius: 1rem;
+        transition: opacity 0.2s ease;
+    }
+
+    #st-music-panel.stm-compact {
+        height: auto;
+    }
+
+    #st-music-panel .stm-header {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 8px;
+        padding: 10px 12px;
+        cursor: default;
+        touch-action: pan-y;
+    }
+
+    .stm-logo-title {
+        min-width: 0;
+    }
+
+    .stm-brand {
+        font-size: 1.15rem;
+    }
+
+    .stm-model {
+        font-size: 0.75rem;
+        letter-spacing: 1px;
+    }
+
+    #st-music-panel .stm-header-controls {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr)) 44px;
+        width: 100%;
+        gap: 4px;
+    }
+
+    #st-music-panel .stm-header-controls button {
+        min-width: 0;
+        min-height: 44px;
+        padding: 6px 2px;
+        font-size: 12px;
+    }
+
+    #st-music-panel .stm-header-controls .stm-icon-btn {
+        width: 44px;
+        height: 44px;
+    }
+
+    /* 播放器是独立页签，其他手机页面将空间全部留给当前内容。 */
+    #st-music-panel:not(.stm-compact) .stm-player-section {
+        display: none;
+    }
+
+    .stm-body {
+        flex-direction: column;
+    }
+
+    #st-music-panel.stm-compact .stm-player-section {
+        width: 100%;
+        padding: 12px;
+        gap: 12px;
+        flex-direction: column;
+        border: none;
+    }
+
+    #st-music-panel.stm-compact .stm-playlist-area {
+        width: 100%;
+        flex: 0 0 180px;
+        min-height: 180px;
+        max-height: none;
+    }
+
+    .stm-playlist-overlay {
+        padding: 8px;
+    }
+
+    .stm-track-item {
+        padding: 6px 8px;
+        min-height: 44px;
+    }
+
+    .stm-track-delete {
+        opacity: 1;
+        min-width: 44px;
+        min-height: 44px;
+        flex-shrink: 0;
+    }
+
+    .stm-player-controls {
+        flex-direction: row;
+        gap: 8px;
+        padding: 0;
+    }
+
+    .stm-playback-group {
+        gap: 4px;
+        padding: 8px;
+    }
+
+    .stm-ctrl-btn,
+    .stm-playback-group .stm-ctrl-btn,
+    .stm-play-btn {
+        width: 44px !important;
+        height: 44px !important;
+        flex-shrink: 0;
+    }
+
+    .stm-icon-btn,
+    .stm-history-close,
+    .stm-dice-btn {
+        width: 44px;
+        height: 44px;
+        flex-shrink: 0;
+    }
+
+    .stm-tab-btn,
+    .stm-toggle-btn,
+    .stm-copy-btn,
+    .stm-history-btn,
+    .stm-refresh-btn,
+    .stm-gender-btn,
+    .stm-instrument-btn,
+    .stm-btn-primary,
+    .stm-btn-secondary,
+    .stm-radio-label {
+        min-height: 44px;
+    }
+
+    .stm-form-scroll,
+    .stm-results-container {
+        padding: 16px;
+    }
+
+    .stm-results-container {
+        min-height: 0;
+        overscroll-behavior: contain;
+    }
+
+    .stm-btn-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .stm-timbre-grid .stm-toggle-btn.full-width {
+        grid-column: span 2;
+    }
+
+    .stm-gender-selector,
+    .stm-lyric-options,
+    .stm-results-header,
+    .stm-history-header,
+    .stm-preview-actions,
+    .stm-result-label-row,
+    .stm-preview-depth-row,
+    .stm-history-detail-actions {
+        flex-wrap: wrap;
+    }
+
+    .stm-gender-label {
+        flex-basis: 100%;
+    }
+
+    .stm-lyric-options {
+        gap: 8px 16px;
+    }
+
+    .stm-settings-row {
+        flex-direction: column;
+        gap: 0;
+    }
+
+    .stm-settings-card,
+    .stm-timbre-panel,
+    .stm-subgenre-panel,
+    .stm-lyrics-panel {
+        padding: 12px;
+    }
+
+    .stm-history-header,
+    .stm-history-list {
+        padding: 12px;
+    }
+
+    .stm-history-list {
+        min-height: 0;
+        overscroll-behavior: contain;
+    }
+
+    .stm-history-header {
+        gap: 8px;
+    }
+
+    .stm-preview-actions {
+        width: 100%;
+        justify-content: flex-end;
+        gap: 6px;
+    }
+
+    .stm-results-title {
+        font-size: 1.15rem;
+    }
+
+    .stm-result-label-row {
+        gap: 8px;
+    }
+
+    .stm-history-entry-header {
+        padding: 10px;
+        gap: 6px;
+    }
+
+    .stm-history-entry-title,
+    .stm-other-req-row .stm-input {
+        min-width: 0;
+    }
+
+    .stm-input-wrapper,
+    .stm-instrument-wrapper {
+        min-width: 0;
+        max-width: 100%;
+    }
+
+    .stm-instrument-wrapper {
+        margin-left: 0;
+    }
+
+    #st-music-root input,
+    #st-music-root textarea,
+    #st-music-root select {
+        font-size: 16px !important;
+        max-width: 100%;
+    }
+
+    #st-music-root input:not([type="radio"]):not([type="checkbox"]),
+    #st-music-root select {
+        min-height: 44px;
+    }
+
+    .stm-modal-header {
+        padding: 16px 16px 8px;
+    }
+
+    .stm-modal-body {
+        padding: 8px 16px 16px;
+    }
+
+    .stm-modal-footer {
+        padding: 12px 16px;
+        gap: 8px;
+        flex-wrap: wrap;
+    }
+}
+
+/* A landscape keyboard can leave less than 200px of visible height. */
+#st-music-root.stm-short-viewport .stm-modal-header {
+    padding: 8px 12px;
+}
+
+#st-music-root.stm-short-viewport .stm-modal-header h3 {
+    font-size: 14px;
+    line-height: 20px;
+}
+
+#st-music-root.stm-short-viewport .stm-modal-body {
+    padding: 4px 12px;
+}
+
+#st-music-root.stm-short-viewport .stm-modal-footer {
+    padding: 6px 12px;
+}
+
+/* Search sources stay readable and tappable in results and saved notes. */
+#stm-result-sources[hidden] {
+    display: none;
+}
+
+.stm-citation-list {
+    margin: 0;
+    padding-left: 24px;
+    color: var(--stm-text-sub);
+    font-size: 13px;
+    line-height: 1.6;
+}
+
+.stm-citation-list a {
+    display: inline-block;
+    max-width: 100%;
+    padding: 8px 0;
+    color: var(--stm-accent);
+    text-decoration: underline;
+    overflow-wrap: anywhere;
+}
+
+.stm-citation-list a:focus-visible {
+    outline: 2px solid var(--stm-accent);
+    outline-offset: 2px;
+}
+
+@media (pointer: coarse) {
+    .stm-citation-list a {
+        box-sizing: border-box;
+        min-height: 44px;
+    }
+}
+
+/* Custom provider fields keep the same narrow-screen flow as official settings. */
+#st-music-root [hidden] {
+    display: none !important;
+}
+
+.stm-settings-model-meta {
+    white-space: pre-line;
+    overflow-wrap: anywhere;
 }

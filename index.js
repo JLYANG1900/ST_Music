@@ -15,6 +15,11 @@ console.log("🎵 [ST Music] 脚本文件已加载 (Client Mode)");
     // --- ST Music runtime add-ons ---
     const ST_MUSIC_RUNTIME_SCRIPTS = Object.freeze([
         {
+            id: "st-music-model-catalog",
+            file: "ModelCatalog.js",
+            isReady: () => Boolean(window.STMusicModelCatalog?.providers),
+        },
+        {
             id: "st-music-api-runtime",
             file: "ApiService.js",
             isReady: () =>
@@ -287,7 +292,8 @@ console.log("🎵 [ST Music] 脚本文件已加载 (Client Mode)");
         capturedNotes: {
             title: "",
             lyrics: "",
-            style: ""
+            style: "",
+            citations: []
         },
 
         // --- 初始化 ---
@@ -296,6 +302,7 @@ console.log("🎵 [ST Music] 脚本文件已加载 (Client Mode)");
             this.injectToggleButton();
             await this.loadHTML();
             if (this.panelLoaded) {
+                this.bindViewportEvents();
                 // 加载独立 API 模块
                 try {
                     await loadStMusicRuntimeScripts();
@@ -331,27 +338,150 @@ console.log("🎵 [ST Music] 脚本文件已加载 (Client Mode)");
         injectToggleButton() {
             if (document.getElementById("st-music-toggle-btn")) return;
 
-            const btn = document.createElement("div");
+            const btn = document.createElement("button");
+            btn.type = "button";
             btn.id = "st-music-toggle-btn";
             btn.innerHTML = '<i class="fa-solid fa-music" style="font-size:18px;"></i>';
             btn.title = "打开 ST Music Creator";
-            btn.style.cssText = `position: fixed; top: 10px; left: 50%; transform: translateX(-50%); z-index: 2147483647;`;
-
-            let isDragging = false;
-            if (typeof $ !== "undefined" && $.fn.draggable) {
-                $(btn).draggable({
-                    containment: "window",
-                    scroll: false,
-                    start: () => { isDragging = true; },
-                    stop: () => { setTimeout(() => { isDragging = false; }, 100); }
-                });
-            }
-
-            btn.addEventListener("click", () => {
-                if (!isDragging) this.togglePanel();
-            });
-
+            btn.setAttribute('aria-label', '打开或关闭音乐面板；按住可拖动');
+            btn.setAttribute('aria-controls', 'st-music-panel');
+            btn.setAttribute('aria-expanded', 'false');
             document.body.appendChild(btn);
+
+            this.bindPointerDrag(btn, btn, {
+                onFinish: () => this.saveTogglePosition(btn),
+            });
+            btn.addEventListener("click", () => this.togglePanel());
+            this.restoreTogglePosition(btn);
+        },
+
+        getViewportBounds() {
+            const viewport = window.visualViewport;
+            return {
+                left: viewport?.offsetLeft || 0,
+                top: viewport?.offsetTop || 0,
+                width: viewport?.width || window.innerWidth,
+                height: viewport?.height || window.innerHeight,
+            };
+        },
+
+        getDragBounds(element) {
+            const viewport = this.getViewportBounds();
+            const style = getComputedStyle(element);
+            const safe = side => parseFloat(style.getPropertyValue(`--stm-safe-${side}`)) || 0;
+            const rect = element.getBoundingClientRect();
+            const left = viewport.left + safe('left') + 8;
+            const top = viewport.top + safe('top') + 8;
+            return {
+                left, top,
+                right: Math.max(left, viewport.left + viewport.width - safe('right') - rect.width - 8),
+                bottom: Math.max(top, viewport.top + viewport.height - safe('bottom') - rect.height - 8),
+            };
+        },
+
+        positionDraggable(element, left, top) {
+            const bounds = this.getDragBounds(element);
+            element.style.left = `${Math.min(bounds.right, Math.max(bounds.left, left))}px`;
+            element.style.top = `${Math.min(bounds.bottom, Math.max(bounds.top, top))}px`;
+            element.style.transform = 'none';
+        },
+
+        // Pointer Events cover mouse, touch and pen without a host jQuery dependency.
+        bindPointerDrag(element, handle, { canStart = () => true, onFinish = () => {} } = {}) {
+            let gesture = null;
+            let suppressClick = false;
+            handle.addEventListener('pointerdown', event => {
+                if (gesture || event.isPrimary === false || event.button !== 0 || !canStart()) return;
+                if (handle !== element && event.target.closest('button, input, select, textarea, a')) return;
+                suppressClick = false;
+                const rect = element.getBoundingClientRect();
+                gesture = { id: event.pointerId, x: event.clientX, y: event.clientY, left: rect.left, top: rect.top, moved: false };
+                handle.setPointerCapture(event.pointerId);
+            });
+            handle.addEventListener('pointermove', event => {
+                if (!gesture || gesture.id !== event.pointerId) return;
+                const dx = event.clientX - gesture.x;
+                const dy = event.clientY - gesture.y;
+                if (!gesture.moved && Math.hypot(dx, dy) < 6) return;
+                gesture.moved = true;
+                element.classList.add('stm-dragging');
+                event.preventDefault();
+                this.positionDraggable(element, gesture.left + dx, gesture.top + dy);
+            });
+            const finish = event => {
+                if (!gesture || gesture.id !== event.pointerId) return;
+                const moved = gesture.moved;
+                gesture = null;
+                element.classList.remove('stm-dragging');
+                if (handle.hasPointerCapture(event.pointerId)) handle.releasePointerCapture(event.pointerId);
+                if (moved) {
+                    suppressClick = true;
+                    onFinish();
+                }
+            };
+            handle.addEventListener('pointerup', finish);
+            handle.addEventListener('pointercancel', finish);
+            handle.addEventListener('lostpointercapture', finish);
+            handle.addEventListener('click', event => {
+                if (!suppressClick || event.detail === 0) return;
+                suppressClick = false;
+                event.preventDefault();
+                event.stopImmediatePropagation();
+            }, true);
+        },
+
+        saveTogglePosition(btn) {
+            const bounds = this.getDragBounds(btn);
+            const rect = btn.getBoundingClientRect();
+            try {
+                localStorage.setItem('ST_Music_Toggle_Position_v1', JSON.stringify({
+                    x: (rect.left - bounds.left) / (bounds.right - bounds.left || 1),
+                    y: (rect.top - bounds.top) / (bounds.bottom - bounds.top || 1),
+                }));
+            } catch { /* Dragging remains usable when browser storage is unavailable. */ }
+        },
+
+        restoreTogglePosition(btn) {
+            const bounds = this.getDragBounds(btn);
+            let position;
+            try { position = JSON.parse(localStorage.getItem('ST_Music_Toggle_Position_v1')); } catch { /* Optional preference. */ }
+            if (position && Number.isFinite(position.x) && Number.isFinite(position.y)) {
+                this.positionDraggable(btn, bounds.left + position.x * (bounds.right - bounds.left), bounds.top + position.y * (bounds.bottom - bounds.top));
+            } else {
+                this.positionDraggable(btn, (bounds.left + bounds.right) / 2, bounds.top);
+            }
+        },
+
+        bindViewportEvents() {
+            const sync = () => {
+                const viewport = this.getViewportBounds();
+                const root = document.getElementById('st-music-root');
+                const btn = document.getElementById('st-music-toggle-btn');
+                [root, btn].filter(Boolean).forEach(element => {
+                    for (const [name, value] of Object.entries(viewport)) {
+                        element.style.setProperty(`--stm-viewport-${name}`, `${value}px`);
+                    }
+                });
+                root?.classList.toggle('stm-short-viewport', viewport.height < 360);
+                if (btn) {
+                    const rect = btn.getBoundingClientRect();
+                    this.positionDraggable(btn, rect.left, rect.top);
+                }
+                this.resetPanelPosition();
+                const focused = document.activeElement;
+                if (root?.contains(focused) && focused.matches('input, textarea, select')) {
+                    focused.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+                }
+            };
+            let frame;
+            const schedule = () => {
+                cancelAnimationFrame(frame);
+                frame = requestAnimationFrame(sync);
+            };
+            window.addEventListener('resize', schedule);
+            window.visualViewport?.addEventListener('resize', schedule);
+            window.visualViewport?.addEventListener('scroll', schedule);
+            sync();
         },
 
         // 加载 HTML
@@ -373,7 +503,7 @@ console.log("🎵 [ST Music] 脚本文件已加载 (Client Mode)");
 
         // 检测是否为移动端
         isMobile() {
-            return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth <= 768;
+            return window.matchMedia('(max-width: 768px)').matches;
         },
 
         // 显示/隐藏面板
@@ -382,32 +512,22 @@ console.log("🎵 [ST Music] 脚本文件已加载 (Client Mode)");
             if (!panel) return;
 
             if (panel.classList.contains("active")) {
+                this.closeLinkModal();
                 panel.classList.remove("active");
                 panel.style.display = "none";
+                document.getElementById('st-music-toggle-btn')?.setAttribute('aria-expanded', 'false');
             } else {
                 panel.style.display = "flex";
-
-                // 移动端强制居中
-                if (this.isMobile()) {
-                    this.centerPanelMobile(panel);
-                }
-
-                setTimeout(() => panel.classList.add("active"), 10);
+                this.resetPanelPosition();
+                panel.classList.add("active");
+                document.getElementById('st-music-toggle-btn')?.setAttribute('aria-expanded', 'true');
                 this.captureCreationNotes(); // 每次打开时尝试捕捉
             }
         },
 
-        // 移动端面板布局（顶部安全距离对齐 - 强制 JS 样式以确保生效）
-        centerPanelMobile(panel) {
-            panel.style.position = 'fixed';
-            panel.style.top = '15vh'; // 顶部 15% 处，避开顶部 UI
-            panel.style.bottom = 'auto';
-            panel.style.left = '50%';
-            panel.style.right = 'auto';
-            panel.style.width = '95vw';
-            panel.style.transform = 'translateX(-50%)';
-            panel.style.borderRadius = '1rem';
-            panel.style.paddingBottom = '0';
+        // Layout and breakpoints are owned by CSS; viewport dimensions are shared above.
+        centerPanelMobile() {
+            this.resetPanelPosition();
         },
 
         // 切换页面 (播放器/创作/成果/设置)
@@ -469,22 +589,11 @@ console.log("🎵 [ST Music] 脚本文件已加载 (Client Mode)");
             }
         },
 
-        // 重置面板位置到屏幕中央 (仅限桌面端)
+        // Clear drag coordinates so CSS can adapt to orientation and keyboard changes.
         resetPanelPosition() {
-            // 如果是从移动端切回来的，需要清理强制的内联样式
             const panel = document.getElementById("st-music-panel");
             if (panel) {
-                panel.style.bottom = '';
-                panel.style.right = '';
-                panel.style.width = '';
-                panel.style.borderRadius = '';
-                panel.style.paddingBottom = '';
-
-                // 恢复桌面端居中
-                panel.style.position = ''; // 清除 fixed，回归 CSS 控制 (虽然 CSS 也是 fixed，但为了保险)
-                panel.style.top = '50%';
-                panel.style.left = '50%';
-                panel.style.transform = 'translate(-50%, -50%)';
+                ['position', 'top', 'left', 'bottom', 'right', 'width', 'transform', 'border-radius', 'padding-bottom'].forEach(name => panel.style.removeProperty(name));
             }
         },
 
@@ -507,13 +616,12 @@ console.log("🎵 [ST Music] 脚本文件已加载 (Client Mode)");
             // 初始化为播放器视图
             this.toggleView('player');
 
-            // 桌面端拖拽功能 (仅限电脑端)
+            // Keep desktop panel dragging available without jQuery UI.
             const panel = document.getElementById("st-music-panel");
-            if (!this.isMobile() && panel && typeof $ !== "undefined" && $.fn.draggable) {
-                $(panel).draggable({
-                    handle: ".stm-header",
-                    containment: "window",
-                    scroll: false
+            const header = panel?.querySelector('.stm-header');
+            if (panel && header) {
+                this.bindPointerDrag(panel, header, {
+                    canStart: () => !this.isMobile(),
                 });
             }
 
@@ -627,6 +735,30 @@ console.log("🎵 [ST Music] 脚本文件已加载 (Client Mode)");
 
             if (modalCancel) modalCancel.onclick = () => this.closeLinkModal();
             if (modalConfirm) modalConfirm.onclick = () => this.confirmAddLink();
+            const modal = document.getElementById('stm-link-modal');
+            if (modal) {
+                modal.addEventListener('click', event => {
+                    if (event.target === modal) this.closeLinkModal();
+                });
+                modal.addEventListener('keydown', event => {
+                    if (event.key === 'Escape') {
+                        event.preventDefault();
+                        event.stopPropagation();
+                        this.closeLinkModal();
+                    } else if (event.key === 'Tab') {
+                        const controls = [...modal.querySelectorAll('input, button')].filter(el => !el.disabled);
+                        const first = controls[0];
+                        const last = controls[controls.length - 1];
+                        if (event.shiftKey && document.activeElement === first) {
+                            event.preventDefault();
+                            last?.focus();
+                        } else if (!event.shiftKey && document.activeElement === last) {
+                            event.preventDefault();
+                            first?.focus();
+                        }
+                    }
+                });
+            }
 
             if (playBtn) playBtn.onclick = () => this.togglePlay();
             if (prevBtn) prevBtn.onclick = () => this.prevTrack();
@@ -634,8 +766,14 @@ console.log("🎵 [ST Music] 脚本文件已加载 (Client Mode)");
 
             if (audioPlayer) {
                 audioPlayer.onended = () => this.nextTrack();
-                audioPlayer.onplay = () => this.updatePlayIcon(true);
-                audioPlayer.onpause = () => this.updatePlayIcon(false);
+                audioPlayer.onplay = () => {
+                    this.player.isPlaying = true;
+                    this.updatePlayIcon(true);
+                };
+                audioPlayer.onpause = audioPlayer.onerror = () => {
+                    this.player.isPlaying = false;
+                    this.updatePlayIcon(false);
+                };
             }
         },
 
@@ -1049,8 +1187,8 @@ ${musicNoteTemplate}
                 if (typeof toastr !== "undefined") toastr.success("音乐创作提示词已注入输入框");
             } else {
                 // 回退：复制到剪贴板
-                navigator.clipboard.writeText(fullText).then(() => {
-                    if (typeof toastr !== "undefined") toastr.info("未找到输入框，提示词已复制到剪贴板");
+                this.writeClipboardText(fullText).then(copied => {
+                    if (copied && typeof toastr !== "undefined") toastr.info("未找到输入框，提示词已复制到剪贴板");
                 });
             }
         },
@@ -1495,7 +1633,7 @@ ${this.state.otherRequirements ? this.state.otherRequirements + '\n' : ''}不仅
             if (genNoteBtn) genNoteBtn.disabled = true;
 
             // 清空旧结果
-            this.capturedNotes = { title: "", lyrics: "", style: "" };
+            this.capturedNotes = { title: "", lyrics: "", style: "", citations: [] };
             this.updateResultsDisplay();
 
             try {
@@ -1506,9 +1644,9 @@ ${this.state.otherRequirements ? this.state.otherRequirements + '\n' : ''}不仅
                 if (result.success) {
                     const match = result.content.match(/<music>([\s\S]*?)<\/music>/i);
                     if (match) {
-                        this.parseCreationNotes(match[1].trim());
+                        this.parseCreationNotes(match[1].trim(), result.citations);
                     } else {
-                        this.parseCreationNotes(result.content.trim());
+                        this.parseCreationNotes(result.content.trim(), result.citations);
                     }
                     this.updateResultsDisplay();
                     if (typeof toastr !== "undefined") toastr.success("创作笔记生成成功！");
@@ -1529,6 +1667,7 @@ ${this.state.otherRequirements ? this.state.otherRequirements + '\n' : ''}不仅
         // --- 捕捉创作笔记 ---
         captureCreationNotes() {
             let chatContext = [];
+            let captured = false;
 
             try {
                 if (typeof window.SillyTavern !== 'undefined') {
@@ -1553,6 +1692,7 @@ ${this.state.otherRequirements ? this.state.otherRequirements + '\n' : ''}不仅
                 if (match) {
                     const content = match[1].trim();
                     this.parseCreationNotes(content);
+                    captured = true;
                     break;
                 }
             }
@@ -1560,12 +1700,14 @@ ${this.state.otherRequirements ? this.state.otherRequirements + '\n' : ''}不仅
             this.updateResultsDisplay();
 
             // 如果捕捉到了内容，保存到历史记录
-            if (this.capturedNotes.title || this.capturedNotes.lyrics || this.capturedNotes.style) {
+            if (captured && (this.capturedNotes.title || this.capturedNotes.lyrics || this.capturedNotes.style)) {
                 this.saveNoteToHistory(this.capturedNotes, 'capture');
             }
         },
 
-        parseCreationNotes(content) {
+        parseCreationNotes(content, citations = []) {
+            this.capturedNotes.citations = this.normalizeCitations(citations);
+
             // 解析歌名
             const titleMatch = content.match(/一、歌名[：:\s]*(.*?)(?=\n|二、|$)/i);
             this.capturedNotes.title = titleMatch ? titleMatch[1].trim() : "";
@@ -1579,29 +1721,75 @@ ${this.state.otherRequirements ? this.state.otherRequirements + '\n' : ''}不仅
             this.capturedNotes.style = styleMatch ? styleMatch[1].trim() : "";
         },
 
+        normalizeCitations(citations) {
+            if (!Array.isArray(citations)) return [];
+            const seen = new Set();
+            return citations.flatMap(citation => {
+                if (!citation || typeof citation.url !== 'string') return [];
+                try {
+                    const url = new URL(citation.url);
+                    if (!['http:', 'https:'].includes(url.protocol) || seen.has(url.href)) return [];
+                    seen.add(url.href);
+                    return [{
+                        url: url.href,
+                        title: typeof citation.title === 'string' && citation.title.trim()
+                            ? citation.title.trim()
+                            : url.hostname,
+                    }];
+                } catch (error) {
+                    return [];
+                }
+            });
+        },
+
+        renderCitationLinks(listEl, citations) {
+            if (!listEl) return 0;
+            listEl.textContent = '';
+            const safeCitations = this.normalizeCitations(citations);
+            safeCitations.forEach(citation => {
+                const item = document.createElement('li');
+                const link = document.createElement('a');
+                link.href = citation.url;
+                link.textContent = citation.title;
+                link.target = '_blank';
+                link.rel = 'noopener noreferrer';
+                item.appendChild(link);
+                listEl.appendChild(item);
+            });
+            return safeCitations.length;
+        },
+
         updateResultsDisplay() {
             const titleEl = document.getElementById("stm-result-title");
             const lyricsEl = document.getElementById("stm-result-lyrics");
             const styleEl = document.getElementById("stm-result-style");
+            const sourcesEl = document.getElementById("stm-result-sources");
+            const sourcesList = document.getElementById("stm-result-sources-list");
 
-            const placeholder = '<span class="stm-placeholder">等待 LLM 返回创作笔记...</span>';
+            for (const [element, value] of [
+                [titleEl, this.capturedNotes.title],
+                [lyricsEl, this.capturedNotes.lyrics],
+                [styleEl, this.capturedNotes.style],
+            ]) {
+                if (!element) continue;
+                element.textContent = value || '';
+                if (!value) {
+                    const placeholder = document.createElement('span');
+                    placeholder.className = 'stm-placeholder';
+                    placeholder.textContent = '等待 LLM 返回创作笔记...';
+                    element.appendChild(placeholder);
+                }
+            }
 
-            if (titleEl) {
-                titleEl.innerHTML = this.capturedNotes.title || placeholder;
-            }
-            if (lyricsEl) {
-                lyricsEl.innerHTML = this.capturedNotes.lyrics || placeholder;
-            }
-            if (styleEl) {
-                styleEl.innerHTML = this.capturedNotes.style || placeholder;
-            }
+            const sourceCount = this.renderCitationLinks(sourcesList, this.capturedNotes.citations);
+            if (sourcesEl) sourcesEl.hidden = sourceCount === 0;
         },
 
         // --- 历史记录管理 ---
 
         /**
          * 保存创作笔记到历史记录
-         * @param {Object} notes - { title, lyrics, style }
+         * @param {Object} notes - { title, lyrics, style, citations }
          * @param {string} source - 'generate' | 'capture'
          */
         saveNoteToHistory(notes, source) {
@@ -1617,12 +1805,14 @@ ${this.state.otherRequirements ? this.state.otherRequirements + '\n' : ''}不仅
                 history[existingIndex].lyrics = notes.lyrics;
                 history[existingIndex].style = notes.style;
                 history[existingIndex].source = source;
+                history[existingIndex].citations = this.normalizeCitations(notes.citations);
             } else {
                 // 添加新记录
                 history.unshift({
                     title: notes.title || "未命名",
                     lyrics: notes.lyrics || "",
                     style: notes.style || "",
+                    citations: this.normalizeCitations(notes.citations),
                     source: source,
                     timestamp: Date.now()
                 });
@@ -1645,7 +1835,12 @@ ${this.state.otherRequirements ? this.state.otherRequirements + '\n' : ''}不仅
         loadNoteHistory() {
             try {
                 const stored = localStorage.getItem('st_music_note_history');
-                return stored ? JSON.parse(stored) : [];
+                const history = stored ? JSON.parse(stored) : [];
+                if (!Array.isArray(history)) return [];
+                return history.filter(item => item && typeof item === 'object').map(item => ({
+                    ...item,
+                    citations: this.normalizeCitations(item.citations),
+                }));
             } catch (e) {
                 return [];
             }
@@ -1725,6 +1920,21 @@ ${this.state.otherRequirements ? this.state.otherRequirements + '\n' : ''}不仅
                     </div>
                 `;
 
+                const citations = this.normalizeCitations(item.citations);
+                if (citations.length) {
+                    const sources = document.createElement('div');
+                    sources.className = 'stm-history-detail-section';
+                    const label = document.createElement('div');
+                    label.className = 'stm-history-detail-label';
+                    label.textContent = '参考来源';
+                    const links = document.createElement('ol');
+                    links.className = 'stm-citation-list';
+                    this.renderCitationLinks(links, citations);
+                    sources.appendChild(label);
+                    sources.appendChild(links);
+                    detail.insertBefore(sources, detail.querySelector('.stm-history-detail-actions'));
+                }
+
                 // 点击歌名展开/收起
                 header.onclick = () => {
                     const isOpen = detail.style.display !== 'none';
@@ -1763,7 +1973,8 @@ ${this.state.otherRequirements ? this.state.otherRequirements + '\n' : ''}不仅
             this.capturedNotes = {
                 title: item.title || "",
                 lyrics: item.lyrics || "",
-                style: item.style || ""
+                style: item.style || "",
+                citations: this.normalizeCitations(item.citations),
             };
             this.updateResultsDisplay();
             this.toggleHistory(false);
@@ -1781,23 +1992,88 @@ ${this.state.otherRequirements ? this.state.otherRequirements + '\n' : ''}不仅
         },
 
         // --- 复制功能 ---
-        copyToClipboard(text, btn) {
+        async writeClipboardText(text) {
+            try {
+                if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
+                    await navigator.clipboard.writeText(text);
+                    return true;
+                }
+            } catch (error) {
+                // 局域网 HTTP、权限拒绝或浏览器限制时使用兼容方案。
+            }
+
+            const activeElement = document.activeElement;
+            const inputSelection = activeElement && typeof activeElement.selectionStart === 'number'
+                ? [activeElement.selectionStart, activeElement.selectionEnd, activeElement.selectionDirection]
+                : null;
+            const selection = window.getSelection();
+            const ranges = [];
+            if (selection) {
+                for (let i = 0; i < selection.rangeCount; i++) ranges.push(selection.getRangeAt(i).cloneRange());
+            }
+
+            const textarea = document.createElement('textarea');
+            textarea.value = text;
+            textarea.readOnly = true;
+            textarea.style.cssText = 'position:fixed;left:0;top:0;width:1px;height:1px;padding:0;border:0;opacity:0;font-size:16px;';
+            let copied = false;
+            try {
+                document.body.appendChild(textarea);
+                textarea.focus({ preventScroll: true });
+                textarea.select();
+                textarea.setSelectionRange(0, text.length);
+                copied = typeof document.execCommand === 'function' && document.execCommand('copy');
+            } catch (error) {
+                copied = false;
+            } finally {
+                textarea.remove();
+                if (activeElement && typeof activeElement.focus === 'function') {
+                    try {
+                        activeElement.focus({ preventScroll: true });
+                        if (inputSelection) activeElement.setSelectionRange(...inputSelection);
+                    } catch (error) { /* 已移除或不可聚焦的元素不影响复制结果。 */ }
+                }
+                if (selection) {
+                    try {
+                        selection.removeAllRanges();
+                        ranges.forEach(range => selection.addRange(range));
+                    } catch (error) { /* 原选区可能已被宿主更新。 */ }
+                }
+            }
+
+            if (!copied) {
+                if (typeof toastr !== 'undefined') toastr.warning('自动复制失败，请在弹出的文本框中手动复制');
+                try {
+                    window.prompt('自动复制失败，请复制下方文字（手机可长按全选后复制）：', text);
+                } catch (error) {
+                    // 浏览器禁用弹窗时也不产生未处理的异常。
+                }
+            }
+            return Boolean(copied);
+        },
+
+        async copyToClipboard(text, btn) {
             if (!text) {
                 if (typeof toastr !== "undefined") toastr.warning("没有内容可复制");
-                return;
+                return false;
             }
             // 移除自动清洗格式，以免误删 [风格] 等关键信息
             const cleanText = text.trim();
-
-            navigator.clipboard.writeText(cleanText).then(() => {
+            if (!cleanText) {
+                if (typeof toastr !== "undefined") toastr.warning("没有内容可复制");
+                return false;
+            }
+            const copied = await this.writeClipboardText(cleanText);
+            if (!copied) return false;
+            if (btn) {
                 const originalHTML = btn.innerHTML;
                 btn.innerHTML = '<i class="fa-solid fa-check"></i> Copied';
                 setTimeout(() => {
                     btn.innerHTML = originalHTML;
                 }, 2000);
-
-                if (typeof toastr !== "undefined") toastr.success("已复制到剪贴板");
-            });
+            }
+            if (typeof toastr !== "undefined") toastr.success("已复制到剪贴板");
+            return true;
         },
 
         // --- 播放器功能 ---
@@ -1839,10 +2115,12 @@ ${this.state.otherRequirements ? this.state.otherRequirements + '\n' : ''}不仅
             const nameInput = document.getElementById("stm-link-name");
 
             if (modal && urlInput && nameInput) {
+                this._linkModalReturnFocus = document.activeElement;
                 urlInput.value = "";
                 nameInput.value = "";
                 modal.style.display = "flex";
-                urlInput.focus();
+                urlInput.focus({ preventScroll: true });
+                urlInput.scrollIntoView({ block: 'nearest', inline: 'nearest' });
             }
         },
 
@@ -1850,6 +2128,11 @@ ${this.state.otherRequirements ? this.state.otherRequirements + '\n' : ''}不仅
         closeLinkModal() {
             const modal = document.getElementById("stm-link-modal");
             if (modal) modal.style.display = "none";
+            const returnFocus = this._linkModalReturnFocus;
+            this._linkModalReturnFocus = null;
+            if (returnFocus && returnFocus.isConnected && typeof returnFocus.focus === 'function') {
+                returnFocus.focus({ preventScroll: true });
+            }
         },
 
         // 确认添加链接
@@ -1935,16 +2218,18 @@ ${this.state.otherRequirements ? this.state.otherRequirements + '\n' : ''}不仅
         },
 
         handleFileUpload(e) {
-            const file = e.target.files[0];
-            if (!file) return;
+            const files = Array.from(e.target.files || []);
+            if (files.length === 0) return;
 
             if (typeof toastr !== "undefined") toastr.info("注意：本地上传仅当前会话有效，刷新后丢失。建议使用外部链接。");
 
-            this.player.playlist.push({
-                name: file.name.replace(/\.[^/.]+$/, ""),
-                url: URL.createObjectURL(file),
-                id: Math.random().toString(36).substr(2, 9),
-                type: 'local'
+            files.forEach(file => {
+                this.player.playlist.push({
+                    name: file.name.replace(/\.[^/.]+$/, ""),
+                    url: URL.createObjectURL(file),
+                    id: Math.random().toString(36).substr(2, 9),
+                    type: 'local'
+                });
             });
             this.renderPlaylist();
 
@@ -2006,14 +2291,20 @@ ${this.state.otherRequirements ? this.state.otherRequirements + '\n' : ''}不仅
                         // Stop playing if deleted current
                         if (idx === this.player.currentTrackIndex) {
                             const audio = document.getElementById("stm-audio-player");
-                            if (audio) audio.pause();
+                            this.player._playRequestId = (this.player._playRequestId || 0) + 1;
+                            if (audio) {
+                                audio.pause();
+                                audio.removeAttribute('src');
+                                audio.load();
+                            }
                             this.player.currentTrackIndex = null;
                             this.player.isPlaying = false;
                             this.updatePlayIcon(false);
-                        } else if (idx < this.player.currentTrackIndex) {
+                        } else if (Number.isInteger(this.player.currentTrackIndex) && idx < this.player.currentTrackIndex) {
                             // Adjust index
                             this.player.currentTrackIndex--;
                         }
+                        if (track.type === 'local') URL.revokeObjectURL(track.url);
                         this.renderPlaylist();
                     };
                 }
@@ -2023,7 +2314,7 @@ ${this.state.otherRequirements ? this.state.otherRequirements + '\n' : ''}不仅
         },
 
         playTrack(index) {
-            if (index < 0 || index >= this.player.playlist.length) return;
+            if (!Number.isInteger(index) || index < 0 || index >= this.player.playlist.length) return;
 
             this.player.currentTrackIndex = index;
             const track = this.player.playlist[index];
@@ -2031,16 +2322,36 @@ ${this.state.otherRequirements ? this.state.otherRequirements + '\n' : ''}不仅
 
             if (audio) {
                 audio.src = track.url;
-                audio.play().then(() => {
-                    this.player.isPlaying = true;
-                    this.updatePlayIcon(true);
-                }).catch(e => {
-                    console.error("Play error:", e);
-                    if (typeof toastr !== "undefined") toastr.error("播放失败: " + e.message);
-                });
+                this.startAudioPlayback(audio);
             }
 
             this.renderPlaylist();
+        },
+
+        startAudioPlayback(audio) {
+            const requestId = (this.player._playRequestId || 0) + 1;
+            this.player._playRequestId = requestId;
+            this.player.isPlaying = false;
+            this.updatePlayIcon(false);
+            const onFailure = error => {
+                if (requestId !== this.player._playRequestId) return;
+                this.player.isPlaying = false;
+                this.updatePlayIcon(false);
+                if (error && error.name === 'AbortError') return;
+                console.error('[ST Music] Play error:', error);
+                if (typeof toastr !== 'undefined') toastr.error('播放失败: ' + (error && error.message || '请检查音频链接或文件格式'));
+            };
+            try {
+                // 必须在点击事件内直接调用，保留移动浏览器要求的用户手势。
+                const pending = audio.play();
+                return Promise.resolve(pending).then(() => {
+                    if (requestId !== this.player._playRequestId) return;
+                    this.player.isPlaying = !audio.paused && !audio.ended;
+                    this.updatePlayIcon(this.player.isPlaying);
+                }, onFailure);
+            } catch (error) {
+                onFailure(error);
+            }
         },
 
         togglePlay() {
@@ -2049,25 +2360,41 @@ ${this.state.otherRequirements ? this.state.otherRequirements + '\n' : ''}不仅
 
             if (this.player.playlist.length === 0) return;
 
+            const index = this.player.currentTrackIndex;
+            if (!Number.isInteger(index) || index < 0 || index >= this.player.playlist.length) {
+                this.playTrack(0);
+                return;
+            }
+            if (!audio.getAttribute('src')) {
+                this.playTrack(index);
+                return;
+            }
+
             if (audio.paused) {
-                audio.play();
-                this.player.isPlaying = true;
+                this.startAudioPlayback(audio);
             } else {
+                this.player._playRequestId = (this.player._playRequestId || 0) + 1;
                 audio.pause();
                 this.player.isPlaying = false;
+                this.updatePlayIcon(false);
             }
-            this.updatePlayIcon(!audio.paused);
         },
 
         prevTrack() {
             if (this.player.playlist.length === 0) return;
-            let newIndex = (this.player.currentTrackIndex - 1 + this.player.playlist.length) % this.player.playlist.length;
+            const index = this.player.currentTrackIndex;
+            const newIndex = Number.isInteger(index) && index >= 0 && index < this.player.playlist.length
+                ? (index - 1 + this.player.playlist.length) % this.player.playlist.length
+                : 0;
             this.playTrack(newIndex);
         },
 
         nextTrack() {
             if (this.player.playlist.length === 0) return;
-            let newIndex = (this.player.currentTrackIndex + 1) % this.player.playlist.length;
+            const index = this.player.currentTrackIndex;
+            const newIndex = Number.isInteger(index) && index >= 0 && index < this.player.playlist.length
+                ? (index + 1) % this.player.playlist.length
+                : 0;
             this.playTrack(newIndex);
         },
 
